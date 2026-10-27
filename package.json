@@ -12,6 +12,7 @@
     "dev": "pnpm --filter @request-agent/server dev",
     "build": "pnpm --filter @request-agent/server build",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
     "lint": "oxlint",
     "format": "prettier . --write --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore",
     "format:check": "prettier . --check --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore"

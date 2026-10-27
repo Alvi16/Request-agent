@@ -8,7 +8,8 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mastra/core": "catalog:",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "mastra": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
