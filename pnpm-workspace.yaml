@@ -7,4 +7,6 @@ catalogMode: strict
 saveExact: true
 engineStrict: true
 
-catalog: {}
+catalog:
+  '@types/node': 26.6.5
+  typescript: 7.0.2
