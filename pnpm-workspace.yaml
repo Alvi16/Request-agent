@@ -15,6 +15,7 @@ catalog:
   "@mastra/core": 1.79.0
   "@types/node": 26.6.5
   mastra: 1.35.0
+  ollama-ai-provider-v2: 4.1.0
   oxlint: 1.89.0
   oxlint-tsgolint: 7.0.2005
   prettier: 3.9.10

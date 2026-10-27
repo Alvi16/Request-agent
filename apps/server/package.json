@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mastra/core": "catalog:",
+    "ollama-ai-provider-v2": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
