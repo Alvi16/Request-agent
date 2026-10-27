@@ -1,0 +1,11 @@
+{
+  "name": "request-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-channel AI agent for request management (Slack, Email) built with Mastra",
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": "^26.12.1"
+  }
+}

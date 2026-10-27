@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Every dependency version is declared once in the catalog and shared by all packages.
+catalogMode: strict
+saveExact: true
+engineStrict: true
+
+catalog: {}
