@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.mastra/
+
+# Test coverage
+coverage/
+
+# Environment variables (only the template is versioned)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Local assistant configuration
+.claude/
+CLAUDE.md
