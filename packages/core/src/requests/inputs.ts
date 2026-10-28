@@ -19,14 +19,16 @@ const summary = z.string().trim().max(1000);
 const description = z.string().trim().max(10_000);
 const limit = z.int().min(1).max(20).default(10);
 
+// The type, texts and confidence of a new request come from the classification of the message,
+// computed before the agent runs. The agent only chooses the project when it was not identified.
 export const createRequestInput = z.object({
-  type,
-  title,
-  summary: summary.optional(),
-  description: description.optional(),
-  priority: priority.optional(),
-  projectKey: projectKey.optional(),
-  confidence: z.number().min(0).max(1).describe("Confidence in the classification, from 0 to 1"),
+  projectKey: projectKey
+    .optional()
+    .describe("Project key. Leave it out to use the project identified for the message"),
+});
+
+export const requestClarificationInput = z.object({
+  question: z.string().trim().min(1).max(500).describe("The question to ask the sender"),
 });
 
 export const updateRequestInput = z.object({
@@ -62,6 +64,7 @@ export const searchRequestsInput = z.object({
 });
 
 export type CreateRequestInput = z.infer<typeof createRequestInput>;
+export type RequestClarificationInput = z.infer<typeof requestClarificationInput>;
 export type UpdateRequestInput = z.infer<typeof updateRequestInput>;
 export type RequestReferenceInput = z.infer<typeof requestReferenceInput>;
 export type FindRequestInput = z.infer<typeof findRequestInput>;

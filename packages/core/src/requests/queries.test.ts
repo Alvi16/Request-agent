@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { alice, bruno, chloeSlackId, storeMessage } from "../../test/fixtures.ts";
+import { alice, bruno, chloeSlackId, classified, storeMessage } from "../../test/fixtures.ts";
 import { useAppTestDatabase, useTestDatabase } from "../../test/database.ts";
 import { seedDatabase } from "../db/seed.ts";
 import { addMessageToRequest, createRequest, updateRequest } from "./commands.ts";
-import type { CreateRequestInput } from "./inputs.ts";
+import type { Classification } from "../classification/classifier.ts";
 import { findRequest, getRequestStatus, listProjectRequests, searchRequests } from "./queries.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
 
@@ -32,15 +32,19 @@ async function turnFor(
   });
 }
 
+// Files a request whose message was classified with the given values.
 async function file(
   sender: string,
-  input: Omit<CreateRequestInput, "confidence">,
+  input: Pick<Classification, "type" | "title"> & { summary?: string; projectKey?: string },
   thread?: string,
 ): Promise<string> {
-  const result = await createRequest(getAppDatabase(), await turnFor(sender, { thread }), {
-    confidence: 0.8,
-    ...input,
+  const { projectKey, summary = "", ...classification } = input;
+  const turn = classified(await turnFor(sender, { thread }), {
+    ...classification,
+    summary,
+    description: "",
   });
+  const result = await createRequest(getAppDatabase(), turn, { projectKey });
   if (!result.ok) {
     throw new Error(`The request was not created: ${result.error}`);
   }
@@ -127,14 +131,14 @@ describe("getRequestStatus", () => {
     const reference = await file(alice, { type: "BUG", title: "Panier vidé", projectKey: "SHOP" });
     await updateRequest(getAppDatabase(), await turnFor(alice), {
       reference,
-      changes: { priority: "HIGH" },
+      changes: { priority: "CRITICAL" },
     });
 
     const result = await getRequestStatus(getAppDatabase(), await chloe(), { reference });
 
     expect(result).toMatchObject({
       ok: true,
-      value: { reference, status: "NEW", priority: "HIGH", lastEvent: { type: "UPDATED" } },
+      value: { reference, status: "NEW", priority: "CRITICAL", lastEvent: { type: "UPDATED" } },
     });
   });
 });
