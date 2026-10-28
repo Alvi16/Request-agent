@@ -25,9 +25,31 @@ import { z } from "zod";
 
 const noInput = z.object({});
 
+type ResultOf<F extends (...args: never[]) => Promise<unknown>> = Awaited<ReturnType<F>>;
+
+// What a tool did, recorded by the tool itself. The answer to the sender and the end of the agent
+// run are decided from this record, not from the text of the model.
+export type ToolOutcome =
+  | { tool: "create_request"; result: ResultOf<typeof createRequest> }
+  | {
+      tool: "request_clarification";
+      question: string;
+      result: ResultOf<typeof requestClarification>;
+    }
+  | { tool: "update_request"; result: ResultOf<typeof updateRequest> }
+  | { tool: "find_request"; result: ResultOf<typeof findRequest> }
+  | { tool: "list_project_requests"; result: ResultOf<typeof listProjectRequests> }
+  | { tool: "get_request_status"; result: ResultOf<typeof getRequestStatus> }
+  | { tool: "add_message_to_request"; result: ResultOf<typeof addMessageToRequest> }
+  | { tool: "search_requests"; result: ResultOf<typeof searchRequests> };
+
 // Builds the tools for one message. The turn is captured here, out of reach of the model and of
 // HTTP clients: the tools are never registered on the server, so its API cannot call them.
-export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInput {
+export function createRequestTools(
+  db: Database,
+  turn: ClassifiedTurn,
+  outcomes: ToolOutcome[],
+): ToolsInput {
   const identifyContact = createTool({
     id: "identify_contact",
     description:
@@ -54,17 +76,25 @@ export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInp
       "filed only once: calling it again returns the existing request with created set to false. " +
       "Returns NOT_A_REQUEST for a message that is clearly not a request.",
     inputSchema: createRequestInput,
-    execute: (input) => createRequest(db, turn, input),
+    execute: async (input) => {
+      const result = await createRequest(db, turn, input);
+      outcomes.push({ tool: "create_request", result });
+      return result;
+    },
   });
 
   const requestClarificationTool = createTool({
     id: "request_clarification",
     description:
       "Records a question to ask the sender when important information is missing or ambiguous, " +
-      "such as which project the message is about. The request waits for the answer and for a " +
-      "human review. Ask the same question in your reply.",
+      "such as which project the message is about. The question is sent to the sender, and the " +
+      "request waits for the answer and for a human review.",
     inputSchema: requestClarificationInput,
-    execute: (input) => requestClarification(db, turn, input),
+    execute: async (input) => {
+      const result = await requestClarification(db, turn, input);
+      outcomes.push({ tool: "request_clarification", question: input.question, result });
+      return result;
+    },
   });
 
   const updateRequestTool = createTool({
@@ -73,7 +103,11 @@ export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInp
       "Changes the type, priority, title, summary, description or project of a request. " +
       "The status can only be changed by a person.",
     inputSchema: updateRequestInput,
-    execute: (input) => updateRequest(db, turn, input),
+    execute: async (input) => {
+      const result = await updateRequest(db, turn, input);
+      outcomes.push({ tool: "update_request", result });
+      return result;
+    },
   });
 
   const findRequestTool = createTool({
@@ -82,21 +116,33 @@ export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInp
       "Returns a request with its recent history. Without a reference, returns the request of " +
       "the current conversation, which a reply in the same thread usually follows up on.",
     inputSchema: findRequestInput,
-    execute: (input) => findRequest(db, turn, input),
+    execute: async (input) => {
+      const result = await findRequest(db, turn, input);
+      outcomes.push({ tool: "find_request", result });
+      return result;
+    },
   });
 
   const listProjectRequestsTool = createTool({
     id: "list_project_requests",
     description: "Lists the requests of a project, most recent activity first.",
     inputSchema: listProjectRequestsInput,
-    execute: (input) => listProjectRequests(db, turn, input),
+    execute: async (input) => {
+      const result = await listProjectRequests(db, turn, input);
+      outcomes.push({ tool: "list_project_requests", result });
+      return result;
+    },
   });
 
   const getRequestStatusTool = createTool({
     id: "get_request_status",
     description: "Returns the status and priority of a request, with its last event.",
     inputSchema: requestReferenceInput,
-    execute: (input) => getRequestStatus(db, turn, input),
+    execute: async (input) => {
+      const result = await getRequestStatus(db, turn, input);
+      outcomes.push({ tool: "get_request_status", result });
+      return result;
+    },
   });
 
   const addMessageToRequestTool = createTool({
@@ -105,7 +151,11 @@ export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInp
       "Files the message being handled under an existing request, such as a follow-up or " +
       "additional information, instead of creating a new request.",
     inputSchema: requestReferenceInput,
-    execute: (input) => addMessageToRequest(db, turn, input),
+    execute: async (input) => {
+      const result = await addMessageToRequest(db, turn, input);
+      outcomes.push({ tool: "add_message_to_request", result });
+      return result;
+    },
   });
 
   const searchRequestsTool = createTool({
@@ -114,7 +164,11 @@ export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInp
       "Searches requests by words, best matches first. Use it to find a request the message " +
       "refers to, or an existing request about the same problem before creating a new one.",
     inputSchema: searchRequestsInput,
-    execute: (input) => searchRequests(db, turn, input),
+    execute: async (input) => {
+      const result = await searchRequests(db, turn, input);
+      outcomes.push({ tool: "search_requests", result });
+      return result;
+    },
   });
 
   // An unverified sender gets no access to existing requests: the agent can only file the message.

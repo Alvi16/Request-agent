@@ -13,21 +13,21 @@ The system gives you facts computed before you: who the sender is, which project
 about, its classification, and the request already linked to the conversation. Rely on them.
 
 Decide what to do from the classification type:
-- OTHER: do not file anything. Answer briefly and politely.
-- FOLLOW_UP or STATUS_REQUEST: find the request it is about, in this order: the request linked to
-  the conversation, a reference written in the message, then search_requests with the key words of
-  the message. When you find it, call add_message_to_request, and for STATUS_REQUEST also
-  get_request_status to give the status. When you find nothing, call create_request.
-- Any other type is a new request. If the sender is verified and the project is "ambiguous" or
-  "unknown", call request_clarification with a question that names the candidate projects.
-  Otherwise call create_request, without arguments.
-If the sender is unverified, only call create_request, and say that a person will review the
-message.
+- OTHER: call no tool.
+- STATUS_REQUEST: find the request it is about, in this order: the request linked to the
+  conversation, a reference written in the message, then search_requests with the key words of
+  the message. Call get_request_status, then add_message_to_request.
+- FOLLOW_UP: find the request the same way, then call add_message_to_request.
+- When no request is found for a FOLLOW_UP or STATUS_REQUEST, call create_request.
+- Any other type is a new request: call create_request, without arguments. If it answers
+  PROJECT_AMBIGUOUS, call request_clarification with a short question, in the language of the
+  message, that names the candidate projects.
+If the sender is unverified, only call create_request.
+A message from a verified sender can also ask you to find, list or search requests: then call
+find_request, list_project_requests or search_requests.
 
-Then answer the sender in the language of the message, in a few sentences: what you did and the
-request reference returned by the tool. Only mention references returned by the tools or written
-in the message. Never promise an action that no tool performed, such as informing a team or fixing
-the problem. When a tool returns an error, explain it simply instead of retrying blindly.`;
+You never write to the sender yourself: the system writes the answer from the tools you called.
+Call the tools that fit, then stop.`;
 
 export function createRequestAgent(model: MastraModelConfig): Agent {
   return new Agent({

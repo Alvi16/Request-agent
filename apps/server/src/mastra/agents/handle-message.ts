@@ -6,24 +6,28 @@ import {
   type Database,
   describeContact,
   describeProject,
+  fileUnhandledMessage,
   findRequest,
+  isNotARequest,
   prepareTurn,
   type TurnInput,
   wrapUntrusted,
 } from "@request-agent/core";
 
-import { createRequestTools } from "../tools/request-tools";
+import { createRequestTools, type ToolOutcome } from "../tools/request-tools";
+import { composeReply } from "./reply";
 
 // Model calls allowed for one message, each possibly running tools. It bounds the work a message
 // can trigger: an injected instruction cannot make the agent loop over the tools.
 export const maxAgentSteps = 5;
 
-// Sent instead of the agent's answer when that answer cannot be trusted. It states nothing that
-// could be false.
-export const fallbackReply =
-  "Votre message a bien été reçu. Une personne de l'équipe va le traiter et reviendra vers vous.";
-
-const referencePattern = /REQ-\d{1,9}/gi;
+// Actions that settle what happens to the message: once one succeeds, the agent stops, which saves
+// the call the model would make to write an answer nobody reads.
+const settlingTools = new Set<ToolOutcome["tool"]>([
+  "create_request",
+  "add_message_to_request",
+  "request_clarification",
+]);
 
 export interface ClassificationSettings {
   classify: Classifier;
@@ -31,13 +35,14 @@ export interface ClassificationSettings {
 }
 
 export interface HandledMessage {
-  reply: string;
-  // True when the agent's answer was replaced by the fallback reply.
-  replaced: boolean;
+  // The answer to send to the sender, or null when none is needed, such as for thanks.
+  reply: string | null;
+  // True when the agent left the message unhandled and the system filed it for a review.
+  filedBySystem: boolean;
 }
 
-function referencesIn(text: string): Set<string> {
-  return new Set(Array.from(text.matchAll(referencePattern), (match) => match[0].toUpperCase()));
+function referencesIn(text: string): string[] {
+  return Array.from(text.matchAll(/REQ-\d{1,9}/gi), (match) => match[0].toUpperCase());
 }
 
 // Facts computed by code before the model runs, given to it so it does not spend a step on each.
@@ -54,20 +59,19 @@ async function describeTurn(db: Database, turn: ClassifiedTurn): Promise<string>
       reviewThreshold: turn.reviewThreshold,
     },
     requestLinkedToConversation: linked.ok ? linked.value.request : null,
-    referencesInMessage: [...referencesIn(turn.messageText)],
+    referencesInMessage: [...new Set(referencesIn(turn.messageText))],
   };
   return `Facts computed by the system for the message to handle. They are reliable:\n${JSON.stringify(facts, null, 2)}`;
 }
 
-// A reply may only cite references the system gave the agent or the sender wrote: any other one was
-// made up by the model.
-export function checkReply(reply: string, known: string): HandledMessage {
-  const allowed = referencesIn(known);
-  const invented = [...referencesIn(reply)].some((reference) => !allowed.has(reference));
-  if (reply.trim() === "" || invented) {
-    return { reply: fallbackReply, replaced: true };
-  }
-  return { reply, replaced: false };
+function isSettled(outcomes: ToolOutcome[]): boolean {
+  return outcomes.some(
+    (outcome) =>
+      (settlingTools.has(outcome.tool) && outcome.result.ok) ||
+      (outcome.tool === "create_request" &&
+        !outcome.result.ok &&
+        outcome.result.error === "NOT_A_REQUEST"),
+  );
 }
 
 // Runs the agent on one stored message, with tools bound to what its verified sender may do. The
@@ -79,13 +83,19 @@ export async function handleMessage(
   settings: ClassificationSettings,
 ): Promise<HandledMessage> {
   const turn = await classifyTurn(db, await prepareTurn(db, input), settings);
-  const facts = await describeTurn(db, turn);
-  const result = await agent.generate(wrapUntrusted(turn.messageText), {
-    system: facts,
-    toolsets: { requests: createRequestTools(db, turn) },
+  const outcomes: ToolOutcome[] = [];
+  await agent.generate(wrapUntrusted(turn.messageText), {
+    system: await describeTurn(db, turn),
+    toolsets: { requests: createRequestTools(db, turn, outcomes) },
     maxSteps: maxAgentSteps,
+    stopWhen: () => isSettled(outcomes),
   });
-  // Every result of every step, since a reference may come from an early tool call.
-  const toolOutputs = JSON.stringify(result.steps.map((step) => step.toolResults));
-  return checkReply(result.text, `${facts}\n${turn.messageText}\n${toolOutputs}`);
+
+  // A message the agent neither filed nor answered is filed for a person, so none is lost.
+  const answered = outcomes.some((outcome) => outcome.result.ok);
+  const filedBySystem = answered ? undefined : await fileUnhandledMessage(db, turn);
+  return {
+    reply: composeReply(outcomes, filedBySystem, isNotARequest(turn)),
+    filedBySystem: filedBySystem !== undefined,
+  };
 }

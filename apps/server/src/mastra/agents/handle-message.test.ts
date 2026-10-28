@@ -12,7 +12,7 @@ import {
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { offeredTools, type ScriptedStep, scriptedModel } from "../../../test/scripted-model";
-import { checkReply, fallbackReply, handleMessage, maxAgentSteps } from "./handle-message";
+import { handleMessage, maxAgentSteps } from "./handle-message";
 import { createRequestAgent } from "./request-agent";
 
 const getDatabase = useTestDatabase();
@@ -52,12 +52,17 @@ async function run(
 
 describe("handleMessage", () => {
   it("files the message of a verified contact as a request, from its classification", async () => {
-    const { result } = await run(
-      [{ toolCalls: [{ tool: "create_request", input: {} }] }, { text: "Demande REQ-0001 créée." }],
+    const { model, result } = await run(
+      [{ toolCalls: [{ tool: "create_request", input: {} }] }, { text: "Demande créée." }],
       bruno,
     );
 
-    expect(result).toEqual({ reply: "Demande REQ-0001 créée.", replaced: false });
+    expect(result).toEqual({
+      reply: "Votre demande est enregistrée sous la référence REQ-0001.",
+      filedBySystem: false,
+    });
+    // Filing settles the message, so the model is not called again to write an answer.
+    expect(model.doGenerateCalls).toHaveLength(1);
     const [request] = await getDatabase().select().from(requests);
     expect(request).toMatchObject({
       title: "Portail inaccessible",
@@ -135,7 +140,7 @@ describe("handleMessage", () => {
   });
 
   it("rejects an invalid tool input without running the tool", async () => {
-    await run(
+    const { result } = await run(
       [
         { toolCalls: [{ tool: "create_request", input: { projectKey: "not a key!" } }] },
         { text: "ok" },
@@ -143,7 +148,8 @@ describe("handleMessage", () => {
       bruno,
     );
 
-    expect(await getDatabase().select().from(requests)).toHaveLength(0);
+    // The tool did not run, so the system filed the message for a review instead.
+    expect(result.filedBySystem).toBe(true);
   });
 
   it("stops after a bounded number of steps when the model keeps calling tools", async () => {
@@ -155,10 +161,65 @@ describe("handleMessage", () => {
     expect(model.doGenerateCalls).toHaveLength(maxAgentSteps);
   });
 
-  it("replaces a reply that cites a reference no tool returned", async () => {
-    const { result } = await run([{ text: "C'est noté sous REQ-0042." }], bruno);
+  it("never sends the text of the model, and files a message the agent left unhandled", async () => {
+    const { result } = await run(
+      [{ text: "C'est noté sous REQ-0042, l'équipe s'en occupe." }],
+      bruno,
+    );
 
-    expect(result).toEqual({ reply: fallbackReply, replaced: true });
+    expect(result).toEqual({
+      reply:
+        "Votre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
+      filedBySystem: true,
+    });
+    const [request] = await getDatabase().select().from(requests);
+    expect(request?.needsReview).toBe(true);
+  });
+
+  it("asks which project when the sender works on several, instead of guessing", async () => {
+    const question = "Ce problème concerne-t-il la boutique (SHOP) ou le CRM ?";
+    const { result } = await run(
+      [
+        { toolCalls: [{ tool: "create_request", input: {} }] },
+        { toolCalls: [{ tool: "request_clarification", input: { question } }] },
+        { text: "ok" },
+      ],
+      alice,
+    );
+
+    expect(result).toEqual({ reply: question, filedBySystem: false });
+    const [request] = await getDatabase().select().from(requests);
+    expect(request).toMatchObject({
+      status: "WAITING_FOR_INFO",
+      needsReview: true,
+      projectId: null,
+    });
+  });
+
+  it("files nothing and sends nothing for thanks", async () => {
+    const { result } = await run([{ text: "De rien !" }], bruno, {
+      classification: { type: "OTHER", confidence: 0.95 },
+    });
+
+    expect(result).toEqual({ reply: null, filedBySystem: false });
+    expect(await getDatabase().select().from(requests)).toHaveLength(0);
+  });
+
+  it("answers a status request with the status, and files the message under the request", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
+
+    const { result } = await run(
+      [
+        { toolCalls: [{ tool: "get_request_status", input: { reference: "REQ-0001" } }] },
+        { toolCalls: [{ tool: "add_message_to_request", input: { reference: "REQ-0001" } }] },
+      ],
+      bruno,
+      { classification: { type: "STATUS_REQUEST" } },
+    );
+
+    expect(result.reply).toBe(
+      "Votre message a été ajouté à la demande REQ-0001. La demande REQ-0001 est enregistrée, en attente de traitement.",
+    );
   });
 
   it("writes nothing when the classification fails", async () => {
@@ -173,23 +234,6 @@ describe("handleMessage", () => {
       ),
     ).rejects.toThrow("Ollama is down");
     expect(await getDatabase().select().from(requests)).toHaveLength(0);
-  });
-});
-
-describe("checkReply", () => {
-  it("keeps a reply citing references the system or the sender gave", () => {
-    expect(checkReply("Ajouté à REQ-0007.", "… REQ-0007 …")).toEqual({
-      reply: "Ajouté à REQ-0007.",
-      replaced: false,
-    });
-  });
-
-  it("compares references whatever their case", () => {
-    expect(checkReply("Voir req-0007.", "REQ-0007").replaced).toBe(false);
-  });
-
-  it("replaces an empty reply", () => {
-    expect(checkReply("  ", "")).toEqual({ reply: fallbackReply, replaced: true });
   });
 });
 
