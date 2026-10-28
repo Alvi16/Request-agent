@@ -39,11 +39,12 @@ async function file(
   thread?: string,
 ): Promise<string> {
   const { projectKey, summary = "", ...classification } = input;
-  const turn = classified(await turnFor(sender, { thread }), {
-    ...classification,
-    summary,
-    description: "",
-  });
+  // The message says what the title says, since the description keeps the message text.
+  const turn = classified(
+    await turnFor(sender, { thread }),
+    { ...classification, summary },
+    classification.title,
+  );
   const result = await createRequest(getAppDatabase(), turn, { projectKey });
   if (!result.ok) {
     throw new Error(`The request was not created: ${result.error}`);

@@ -17,7 +17,6 @@ const answer = {
   priority: "HIGH",
   title: "Erreur 500 à la connexion",
   summary: "Le portail ne permet plus de se connecter.",
-  description: "Depuis ce matin, une erreur 500 s'affiche à la connexion.",
 };
 
 function fakeOllama(body: unknown, status = 200) {

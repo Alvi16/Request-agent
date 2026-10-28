@@ -122,6 +122,8 @@ describe("createRequest", () => {
         },
       },
     });
+    const [stored] = await getDatabase().select().from(requests);
+    expect(stored?.description).toBe(turn.messageText);
   });
 
   it("sends a request classified with a low confidence to human review, with the reason", async () => {

@@ -64,6 +64,9 @@ async function lockVisibleRequest(tx: Transaction, turn: Turn, reference: string
   return request;
 }
 
+// Longest description stored, matching what the request operations accept.
+const descriptionLength = 10_000;
+
 // How many times the agent may ask the sender for details on one request. After that, a person
 // takes over, so the agent cannot keep a sender in a loop of questions.
 export const maxClarifications = 2;
@@ -114,7 +117,9 @@ async function insertRequest(
       priority: classification.priority,
       title: classification.title,
       summary: classification.summary || null,
-      description: classification.description || null,
+      // The message itself describes the request best: rewriting it would cost time and could
+      // change its meaning, so the description keeps the sender's words.
+      description: turn.messageText.slice(0, descriptionLength),
       sourceChannel: message.channel,
       confidence: classification.confidence,
       needsReview: reasons.length > 0 || status === "WAITING_FOR_INFO",

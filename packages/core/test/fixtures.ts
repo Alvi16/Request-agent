@@ -61,17 +61,17 @@ export const testReviewThreshold = 0.8;
 export function classified(
   turn: Turn,
   classification: Partial<Classification> = {},
+  messageText = "Les paiements échouent.",
 ): ClassifiedTurn {
   return {
     ...turn,
-    messageText: "Les paiements échouent.",
+    messageText,
     reviewThreshold: testReviewThreshold,
     classification: {
       type: "BUG",
       priority: "HIGH",
       title: "Paiement refusé",
       summary: "Les paiements par carte échouent",
-      description: "Les paiements par carte échouent depuis ce matin.",
       confidence: 0.9,
       model: "test-model",
       promptVersion: "test-prompt",

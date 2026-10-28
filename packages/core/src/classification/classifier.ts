@@ -11,7 +11,6 @@ export interface Classification {
   priority: (typeof requestPriority.enumValues)[number] | null;
   title: string;
   summary: string;
-  description: string;
   // Probability the model gives to the type it chose, read from its token probabilities. Measured
   // to separate right from wrong answers, unlike a confidence the model writes itself.
   confidence: number;
@@ -39,7 +38,6 @@ export interface OllamaClassifierOptions {
 // Stored text sizes, matching what the request operations accept.
 const titleLength = 200;
 const summaryLength = 1000;
-const descriptionLength = 10_000;
 
 // The type comes first, so the model decides it before writing the texts, as in the measurements.
 const answerSchema = z.object({
@@ -47,7 +45,6 @@ const answerSchema = z.object({
   priority: z.enum(requestPriority.enumValues).nullable(),
   title: z.string(),
   summary: z.string(),
-  description: z.string(),
 });
 
 const responseSchema = z.object({
@@ -69,9 +66,8 @@ const systemPrompt = [
     ([name, definition]) => `- ${name}: ${definition}`,
   ),
   "",
-  "Then write, in the language of the message: a short title, a one-sentence summary, and a",
-  "description with every useful detail of the message. Only use facts written in the message or",
-  "its context. Answer with JSON only.",
+  "Then write, in the language of the message, a short title and a one-sentence summary. Only use",
+  "facts written in the message or its context. Answer with JSON only.",
 ].join("\n");
 
 // Identifies the instructions a classification was made with, to compare decisions over time.
@@ -141,7 +137,6 @@ export function createOllamaClassifier(options: OllamaClassifierOptions): Classi
       priority: answer.priority,
       title: answer.title.trim().slice(0, titleLength) || "(no title)",
       summary: answer.summary.trim().slice(0, summaryLength),
-      description: answer.description.trim().slice(0, descriptionLength),
       confidence,
       model: options.model,
       promptVersion: classificationPromptVersion,
