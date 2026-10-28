@@ -14,6 +14,8 @@
   "dependencies": {
     "@mastra/core": "catalog:",
     "@request-agent/core": "workspace:*",
+    "@slack/socket-mode": "catalog:",
+    "@slack/web-api": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
     "zod": "catalog:"
   },
