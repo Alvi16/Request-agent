@@ -70,7 +70,7 @@ When `create_request` files a message, the type, priority, title and summary com
 
 `request_clarification` records the question in the history of the request (`CLARIFICATION_REQUESTED`), sets its status to `WAITING_FOR_INFO` and sends it to review. The question is the answer sent to the sender.
 
-When the requester answers in the same conversation, the agent adds the answer to the request, and the status goes back to `NEW`. Only an answer from the requester does that. The agent asks at most 2 questions per request: after that, the request is left to a person.
+When the requester answers in the same conversation, the agent adds the answer to the request, and the status goes back to `NEW`. If the answer names a project the requester may use, such as "c'est le SHOP", a request filed without a project gets it, and the change is recorded in its history. Only an answer from the requester does that. The agent asks at most 2 questions per request: after that, the request is left to a person.
 
 ## Decision history
 
