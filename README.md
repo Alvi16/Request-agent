@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model and the agent tools are in place. The classification rules come next, then the Slack and Email channels.
+The foundations, the data model, the agent tools and the classification are in place. The Slack and Email channels come next.
 
 | Feature                                                          | Priority | Status      |
 | ---------------------------------------------------------------- | -------- | ----------- |
@@ -13,7 +13,7 @@ The foundations, the data model and the agent tools are in place. The classifica
 | Local PostgreSQL database                                        | P0       | Done        |
 | Data model and structured storage with history and provenance    | P0       | Done        |
 | Typed tools (create, update, find, list, status, search)         | P0       | Done        |
-| Classification and uncertainty handling                          | P0       | Not started |
+| Classification and uncertainty handling                          | P0       | Done        |
 | Slack integration                                                | P0       | Not started |
 | Email integration                                                | P0       | Not started |
 | Email conversations, duplicates, human validation, web interface | P1       | Not started |
@@ -25,6 +25,8 @@ The foundations, the data model and the agent tools are in place. The classifica
 ```mermaid
 flowchart LR
     Channels["Slack, Email<br/>next stages"] -.-> Handler["Message handler<br/>apps/server"]
+    Handler --> Classifier["Classifier<br/>packages/core"]
+    Classifier --> Ollama
     Handler --> Agent[Request agent]
     Agent --> Ollama["Ollama<br/>local model"]
     Agent --> Tools["Request tools<br/>built for each message"]
@@ -34,7 +36,9 @@ flowchart LR
 
 The business core holds the data model and the request operations, with no dependency on any channel. Slack and Email will be input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md).
 
-The agent works on requests only through nine typed tools: `identify_contact`, `identify_project`, `create_request`, `update_request`, `find_request`, `list_project_requests`, `get_request_status`, `add_message_to_request` and `search_requests`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
+Each message is first classified by a separate call to the model, which gives its type, priority, title and summary, with a confidence read from the model's token probabilities. A request waits for a human review when this confidence is low, when its project is unclear or when its sender is unverified. How a message is handled, the types and the measured quality are described in [`docs/agent.md`](docs/agent.md).
+
+The agent works on requests only through ten typed tools: `identify_contact`, `identify_project`, `create_request`, `request_clarification`, `update_request`, `find_request`, `list_project_requests`, `get_request_status`, `add_message_to_request` and `search_requests`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
 
 - The tools are built for each message, bound to its sender in the code. They are not registered on the Mastra server, so its HTTP API cannot run them, and neither the model nor a client can change who they act for.
 - A verified sender reaches only the requests of the projects they work on, and the requests they made. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
@@ -78,15 +82,16 @@ One file, at the root, configures the whole project. It is created from its temp
 cp .env.example .env
 ```
 
-| Variable            | Role                                                                                           | Example value                                                               |
-| ------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD` | Password of the `request_agent` database user, used by Docker Compose                          | `change-me`                                                                 |
-| `POSTGRES_PORT`     | Port of the database on the machine (localhost only)                                           | `5433`                                                                      |
-| `DATABASE_URL`      | Connection to the development database, as its owner. Used by the migrations and the demo data | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
-| `APP_DATABASE_URL`  | Connection used by the application, with the restricted `request_agent_app` role               | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
-| `TEST_DATABASE_URL` | Connection to the test database. Its name must end with `_test`                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
-| `OLLAMA_BASE_URL`   | Ollama API endpoint. Must end with `/api`                                                      | `http://127.0.0.1:11434/api`                                                |
-| `OLLAMA_MODEL`      | Model used by the agent. It must be pulled first                                               | `ornith:9b`                                                                 |
+| Variable                          | Role                                                                                           | Example value                                                               |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`               | Password of the `request_agent` database user, used by Docker Compose                          | `change-me`                                                                 |
+| `POSTGRES_PORT`                   | Port of the database on the machine (localhost only)                                           | `5433`                                                                      |
+| `DATABASE_URL`                    | Connection to the development database, as its owner. Used by the migrations and the demo data | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
+| `APP_DATABASE_URL`                | Connection used by the application, with the restricted `request_agent_app` role               | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
+| `TEST_DATABASE_URL`               | Connection to the test database. Its name must end with `_test`                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
+| `OLLAMA_BASE_URL`                 | Ollama API endpoint. Must end with `/api`                                                      | `http://127.0.0.1:11434/api`                                                |
+| `OLLAMA_MODEL`                    | Model used by the agent. It must be pulled first                                               | `ornith:9b`                                                                 |
+| `CLASSIFICATION_REVIEW_THRESHOLD` | Optional. Below this confidence, from 0 to 1, a request waits for a human review               | `0.8` (default)                                                             |
 
 Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
@@ -146,12 +151,13 @@ The JSON response contains the answer in the `text` field. This route reaches th
 
 ## Tests and code quality
 
-| Command             | What it checks                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm test`         | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
-| `pnpm typecheck`    | TypeScript types, in strict mode                                                                                                                                   |
-| `pnpm lint`         | Lint rules with oxlint, including type-aware rules                                                                                                                 |
-| `pnpm format:check` | Formatting with Prettier. `pnpm format` fixes it                                                                                                                   |
+| Command                    | What it checks                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm test`                | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                   |
+| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                 |
+| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                   |
+| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`             |
 
 ## Project structure
 
@@ -167,13 +173,18 @@ Request-agent/
 │               │   ├── request-agent.ts   Agent and its instructions
 │               │   └── handle-message.ts  Runs the agent on one message, with its tools
 │               └── tools/
-│                   └── request-tools.ts   The nine request tools
+│                   └── request-tools.ts   The ten request tools
 ├── packages/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
-│       ├── scripts/                Migration and demo data commands
+│       ├── eval/                   Labeled messages to measure the classifier
+│       ├── scripts/                Migration, demo data and evaluation commands
 │       ├── src/
-│       │   ├── env.ts              Database environment variables validation
+│       │   ├── env.ts              Environment variables validation
+│       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
+│       │   ├── classification/
+│       │   │   ├── taxonomy.ts     Definitions of the request types and priorities
+│       │   │   └── classifier.ts   Classification call to Ollama, with its confidence
 │       │   ├── db/
 │       │   │   ├── schema.ts       Data model
 │       │   │   ├── client.ts       Database connection
@@ -182,12 +193,14 @@ Request-agent/
 │       │   │   └── seed.ts         Fictitious demo data
 │       │   └── requests/
 │       │       ├── turn.ts         Sender and project of the message, computed before the model
+│       │       ├── classified-turn.ts  Classification of the message and human review rules
 │       │       ├── access.ts       The access rule applied to every operation
 │       │       ├── inputs.ts       Validated inputs of the operations
-│       │       ├── commands.ts     Create, update, add a message
+│       │       ├── commands.ts     Create, clarify, update, add a message
 │       │       └── queries.ts      Find, status, list, search, identify
 │       └── test/                   Test database setup and fixtures, shared with the server
 ├── docs/
+│   ├── agent.md                    How a message is handled, types, review, measured quality
 │   ├── data-model.md               Tables and their columns
 │   └── decisions/                  Technical choices and their reasons
 ├── .github/
@@ -208,4 +221,4 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 - No channel is connected yet: the message handler is exercised by the tests only. Slack and Email come at the next stages.
 - The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
-- The local model is slow on a CPU and less reliable than hosted models on ambiguous messages.
+- The local model is slow on a CPU: classifying a message takes from 20 s to 60 s, and the agent adds its own calls. Its classification is measured on 80 fictitious messages only, described in [`docs/agent.md`](docs/agent.md).
