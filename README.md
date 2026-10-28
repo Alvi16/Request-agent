@@ -63,14 +63,11 @@ ollama pull ornith:9b
 
 ## Configuration
 
-Two files are created from their templates. They are never committed.
+One file, at the root, configures the whole project. It is created from its template and never committed:
 
 ```bash
 cp .env.example .env
-cp apps/server/.env.example apps/server/.env
 ```
-
-`.env`, at the root, configures the database:
 
 | Variable            | Role                                                                  | Example value                                                            |
 | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -78,15 +75,10 @@ cp apps/server/.env.example apps/server/.env
 | `POSTGRES_PORT`     | Port of the database on the machine (localhost only)                  | `5433`                                                                   |
 | `DATABASE_URL`      | Connection to the development database                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`      |
 | `TEST_DATABASE_URL` | Connection to the test database. Its name must end with `_test`       | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test` |
+| `OLLAMA_BASE_URL`   | Ollama API endpoint. Must end with `/api`                             | `http://127.0.0.1:11434/api`                                             |
+| `OLLAMA_MODEL`      | Model used by the agent. It must be pulled first                      | `ornith:9b`                                                              |
 
 Set a password of your choice, and use the same password and port in both URLs. Docker Compose refuses to start the database without a password. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
-
-`apps/server/.env` configures the server:
-
-| Variable          | Role                                             | Example value                |
-| ----------------- | ------------------------------------------------ | ---------------------------- |
-| `OLLAMA_BASE_URL` | Ollama API endpoint. Must end with `/api`        | `http://127.0.0.1:11434/api` |
-| `OLLAMA_MODEL`    | Model used by the agent. It must be pulled first | `ornith:9b`                  |
 
 The server refuses to start and names the faulty variable when one of them is missing or invalid.
 
@@ -155,7 +147,6 @@ The JSON response contains the answer in the `text` field.
 Request-agent/
 ├── apps/
 │   └── server/                     Mastra server
-│       ├── .env.example            Configuration template
 │       └── src/
 │           ├── config.ts           Environment variables validation
 │           └── mastra/
@@ -179,7 +170,7 @@ Request-agent/
 │   └── decisions/                  Technical choices and their reasons
 ├── .github/
 │   └── pull_request_template.md
-├── .env.example                    Database configuration template
+├── .env.example                    Configuration template
 ├── compose.yaml                    Local PostgreSQL database
 ├── .nvmrc                          Node.js version
 ├── .oxlintrc.json                  Lint rules
