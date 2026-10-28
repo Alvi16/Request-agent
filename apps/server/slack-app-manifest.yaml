@@ -17,8 +17,10 @@ oauth_config:
     bot:
       # Mentions of the agent in channels it was invited to.
       - app_mentions:read
-      # Replies in the threads the agent follows, in public channels it was invited to.
+      # Replies in the threads the agent follows, in the public and private channels it was
+      # invited to. Other messages of these channels are ignored and not stored.
       - channels:history
+      - groups:history
       # Direct messages to the agent.
       - im:history
       # Answers in threads.
@@ -30,6 +32,7 @@ settings:
     bot_events:
       - app_mention
       - message.channels
+      - message.groups
       - message.im
   interactivity:
     is_enabled: false

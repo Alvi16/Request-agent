@@ -136,6 +136,21 @@ describe("startSlackAdapter", () => {
     expect(slack.posted.at(-1)?.threadTs).toBe("1793000000.000100");
   });
 
+  it("handles a reply in a thread it follows in a private channel", async () => {
+    const slack = fakeSlack(answered("Quel projet ?"));
+    await slack.deliver("app_mention", { channel: "G1", text: "<@UBOT> le bouton ne marche plus" });
+
+    await slack.deliver("message", {
+      channel: "G1",
+      channel_type: "group",
+      ts: "1793000200.000100",
+      thread_ts: "1793000000.000100",
+      text: "C'est sur le SHOP.",
+    });
+
+    expect(slack.handled).toHaveLength(2);
+  });
+
   it("ignores bots, itself, edits and empty mentions", async () => {
     const slack = fakeSlack(answered("ok"));
 
