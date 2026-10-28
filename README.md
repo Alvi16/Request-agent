@@ -10,6 +10,7 @@ The project is at its foundation stage.
 | ---------------------------------------------------------------- | -------- | ----------- |
 | Monorepo, TypeScript, lint, format and test tooling              | —        | Done        |
 | Mastra agent connected to a local Ollama model                   | P0       | Done        |
+| Local PostgreSQL database                                        | P0       | Done        |
 | Data model and structured storage with history and provenance    | P0       | Not started |
 | Typed tools (create, update, find, list, status, search)         | P0       | Not started |
 | Classification and uncertainty handling                          | P0       | Not started |
@@ -26,9 +27,12 @@ flowchart LR
     Client[HTTP client] --> Server["Mastra server<br/>apps/server"]
     Server --> Agent[Request agent]
     Agent --> Ollama["Ollama<br/>local model"]
+    Server -. next stage .-> Postgres[("PostgreSQL<br/>Docker")]
 ```
 
-Slack and Email will be added as input adapters in front of the same agent, and the business logic will live in a separate package with no dependency on any channel.
+The PostgreSQL database already runs and will store the requests from the next stage. Slack and Email will be added as input adapters in front of the same agent, and the business logic will live in a separate package with no dependency on any channel.
+
+The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
 
 ## Prerequisites
 
@@ -37,6 +41,7 @@ Slack and Email will be added as input adapters in front of the same agent, and 
 | Node.js | 26.12.1 | Pinned in `.nvmrc`. Installing it with [nvm](https://github.com/nvm-sh/nvm) is recommended |
 | pnpm    | 12.15.0 | Pinned in `package.json` (`packageManager`)                                                |
 | Ollama  | 0.40.11 | Version tested. Older versions can refuse recent models (0.40.3 does)                      |
+| Docker  | 29.1.3  | Version tested, with Docker Compose 2.40.3. Runs the database                              |
 
 The `ornith:9b` model takes 5.6 GB and needs about 6 GB of free RAM. It runs on the CPU when no GPU is available, which makes each answer take from a few seconds to about a minute and a half.
 
@@ -57,11 +62,23 @@ ollama pull ornith:9b
 
 ## Configuration
 
-The server reads its configuration from `apps/server/.env`. Create it from the template:
+Two files are created from their templates. They are never committed.
 
 ```bash
+cp .env.example .env
 cp apps/server/.env.example apps/server/.env
 ```
+
+`.env`, at the root, configures the database started by Docker Compose:
+
+| Variable            | Role                                                 | Example value |
+| ------------------- | ---------------------------------------------------- | ------------- |
+| `POSTGRES_PASSWORD` | Password of the `request_agent` database user        | `change-me`   |
+| `POSTGRES_PORT`     | Port of the database on the machine (localhost only) | `5433`        |
+
+Set a password of your choice. Docker Compose refuses to start the database without one. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
+
+`apps/server/.env` configures the server:
 
 | Variable          | Role                                             | Example value                |
 | ----------------- | ------------------------------------------------ | ---------------------------- |
@@ -71,6 +88,14 @@ cp apps/server/.env.example apps/server/.env
 The server refuses to start and names the faulty variable when one of them is missing or invalid.
 
 ## Running
+
+Start the database. The command waits until it is ready:
+
+```bash
+pnpm db:up
+```
+
+Its data is kept in a Docker volume. `pnpm db:down` stops it without deleting the data.
 
 Ollama must be running. Start it in a separate terminal if it is not already running as a service:
 
@@ -127,8 +152,12 @@ Request-agent/
 │               ├── index.ts        Mastra entry point: registers the agent
 │               └── agents/
 │                   └── request-agent.ts
+├── docs/
+│   └── decisions/                  Technical choices and their reasons
 ├── .github/
 │   └── pull_request_template.md
+├── .env.example                    Database configuration template
+├── compose.yaml                    Local PostgreSQL database
 ├── .nvmrc                          Node.js version
 ├── .oxlintrc.json                  Lint rules
 ├── package.json                    Root scripts
@@ -140,6 +169,6 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- No persistent storage yet: Mastra keeps its data in memory and loses it on restart. The database is chosen at the next stage.
+- The database runs but is not used yet: the data model is added at the next stage. Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The agent has no tools yet: it can answer but cannot create or find requests.
 - The local model is slow on a CPU and less reliable than hosted models on ambiguous messages.
