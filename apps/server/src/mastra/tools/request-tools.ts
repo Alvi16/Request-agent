@@ -2,6 +2,7 @@ import type { ToolsInput } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
 import {
   addMessageToRequest,
+  type ClassifiedTurn,
   createRequest,
   createRequestInput,
   type Database,
@@ -12,10 +13,11 @@ import {
   getRequestStatus,
   listProjectRequests,
   listProjectRequestsInput,
+  requestClarification,
+  requestClarificationInput,
   requestReferenceInput,
   searchRequests,
   searchRequestsInput,
-  type Turn,
   updateRequest,
   updateRequestInput,
 } from "@request-agent/core";
@@ -25,7 +27,7 @@ const noInput = z.object({});
 
 // Builds the tools for one message. The turn is captured here, out of reach of the model and of
 // HTTP clients: the tools are never registered on the server, so its API cannot call them.
-export function createRequestTools(db: Database, turn: Turn): ToolsInput {
+export function createRequestTools(db: Database, turn: ClassifiedTurn): ToolsInput {
   const identifyContact = createTool({
     id: "identify_contact",
     description:
@@ -47,10 +49,22 @@ export function createRequestTools(db: Database, turn: Turn): ToolsInput {
   const createRequestTool = createTool({
     id: "create_request",
     description:
-      "Files the message being handled as a new request. A message is filed only once: " +
-      "calling it again returns the existing request with created set to false.",
+      "Files the message being handled as a new request, with the type, texts and priority of " +
+      "its classification, under the identified project. No argument is needed. A message is " +
+      "filed only once: calling it again returns the existing request with created set to false. " +
+      "Returns NOT_A_REQUEST for a message that is clearly not a request.",
     inputSchema: createRequestInput,
     execute: (input) => createRequest(db, turn, input),
+  });
+
+  const requestClarificationTool = createTool({
+    id: "request_clarification",
+    description:
+      "Records a question to ask the sender when important information is missing or ambiguous, " +
+      "such as which project the message is about. The request waits for the answer and for a " +
+      "human review. Ask the same question in your reply.",
+    inputSchema: requestClarificationInput,
+    execute: (input) => requestClarification(db, turn, input),
   });
 
   const updateRequestTool = createTool({
@@ -115,6 +129,7 @@ export function createRequestTools(db: Database, turn: Turn): ToolsInput {
     identify_contact: identifyContact,
     identify_project: identifyProject,
     create_request: createRequestTool,
+    request_clarification: requestClarificationTool,
     update_request: updateRequestTool,
     find_request: findRequestTool,
     list_project_requests: listProjectRequestsTool,
