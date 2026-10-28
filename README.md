@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations and the data model are in place. The agent tools come next.
+The foundations, the data model and the agent tools are in place. The classification rules come next, then the Slack and Email channels.
 
 | Feature                                                          | Priority | Status      |
 | ---------------------------------------------------------------- | -------- | ----------- |
@@ -12,7 +12,7 @@ The foundations and the data model are in place. The agent tools come next.
 | Mastra agent connected to a local Ollama model                   | P0       | Done        |
 | Local PostgreSQL database                                        | P0       | Done        |
 | Data model and structured storage with history and provenance    | P0       | Done        |
-| Typed tools (create, update, find, list, status, search)         | P0       | Not started |
+| Typed tools (create, update, find, list, status, search)         | P0       | Done        |
 | Classification and uncertainty handling                          | P0       | Not started |
 | Slack integration                                                | P0       | Not started |
 | Email integration                                                | P0       | Not started |
@@ -24,14 +24,23 @@ The foundations and the data model are in place. The agent tools come next.
 
 ```mermaid
 flowchart LR
-    Client[HTTP client] --> Server["Mastra server<br/>apps/server"]
-    Server --> Agent[Request agent]
+    Channels["Slack, Email<br/>next stages"] -.-> Handler["Message handler<br/>apps/server"]
+    Handler --> Agent[Request agent]
     Agent --> Ollama["Ollama<br/>local model"]
-    Core["Business core<br/>packages/core"] --> Postgres[("PostgreSQL<br/>Docker")]
-    Agent -. next stage .-> Core
+    Agent --> Tools["Request tools<br/>built for each message"]
+    Tools --> Core["Business core<br/>packages/core"]
+    Core --> Postgres[("PostgreSQL<br/>Docker")]
 ```
 
-The business core holds the data model and the database access, with no dependency on any channel. The agent will use it through typed tools at the next stage. Slack and Email will be added as input adapters in front of the same agent. The data model is described in [`docs/data-model.md`](docs/data-model.md).
+The business core holds the data model and the request operations, with no dependency on any channel. Slack and Email will be input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md).
+
+The agent works on requests only through nine typed tools: `identify_contact`, `identify_project`, `create_request`, `update_request`, `find_request`, `list_project_requests`, `get_request_status`, `add_message_to_request` and `search_requests`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
+
+- The tools are built for each message, bound to its sender in the code. They are not registered on the Mastra server, so its HTTP API cannot run them, and neither the model nor a client can change who they act for.
+- A verified sender reaches only the requests of the projects they work on, and the requests they made. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
+- The project is identified by fixed rules before the model runs: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the result is ambiguous and the model cannot pick one at random.
+- The model makes at most 5 calls per message, tool inputs have bounded sizes, a message is filed only once, and every change is written to the request history.
+- The application connects to the database with the `request_agent_app` role, which cannot delete rows, change the schema or rewrite the history.
 
 The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
 
@@ -133,16 +142,16 @@ curl -X POST http://localhost:4111/api/agents/request-agent/generate \
   -d '{"messages":[{"role":"user","content":"Bonjour"}]}'
 ```
 
-The JSON response contains the answer in the `text` field.
+The JSON response contains the answer in the `text` field. This route reaches the agent without its request tools: they are only given to messages received through a channel, which will be connected at the next stages.
 
 ## Tests and code quality
 
-| Command             | What it checks                                                                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm test`         | Tests (Vitest). The model is simulated, Ollama is not needed. The data model tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
-| `pnpm typecheck`    | TypeScript types, in strict mode                                                                                                                                              |
-| `pnpm lint`         | Lint rules with oxlint, including type-aware rules                                                                                                                            |
-| `pnpm format:check` | Formatting with Prettier. `pnpm format` fixes it                                                                                                                              |
+| Command             | What it checks                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm test`         | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`    | TypeScript types, in strict mode                                                                                                                                   |
+| `pnpm lint`         | Lint rules with oxlint, including type-aware rules                                                                                                                 |
+| `pnpm format:check` | Formatting with Prettier. `pnpm format` fixes it                                                                                                                   |
 
 ## Project structure
 
@@ -154,20 +163,30 @@ Request-agent/
 │           ├── config.ts           Environment variables validation
 │           └── mastra/
 │               ├── index.ts        Mastra entry point: registers the agent
-│               └── agents/
-│                   └── request-agent.ts
+│               ├── agents/
+│               │   ├── request-agent.ts   Agent and its instructions
+│               │   └── handle-message.ts  Runs the agent on one message, with its tools
+│               └── tools/
+│                   └── request-tools.ts   The nine request tools
 ├── packages/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
 │       ├── scripts/                Migration and demo data commands
 │       ├── src/
 │       │   ├── env.ts              Database environment variables validation
-│       │   └── db/
-│       │       ├── schema.ts       Data model
-│       │       ├── client.ts       Database connection
-│       │       ├── migrate.ts      Migration runner
-│       │       └── seed.ts         Fictitious demo data
-│       └── test/                   Test database setup
+│       │   ├── db/
+│       │   │   ├── schema.ts       Data model
+│       │   │   ├── client.ts       Database connection
+│       │   │   ├── migrate.ts      Migration runner
+│       │   │   ├── app-role.ts     Password of the restricted application role
+│       │   │   └── seed.ts         Fictitious demo data
+│       │   └── requests/
+│       │       ├── turn.ts         Sender and project of the message, computed before the model
+│       │       ├── access.ts       The access rule applied to every operation
+│       │       ├── inputs.ts       Validated inputs of the operations
+│       │       ├── commands.ts     Create, update, add a message
+│       │       └── queries.ts      Find, status, list, search, identify
+│       └── test/                   Test database setup and fixtures, shared with the server
 ├── docs/
 │   ├── data-model.md               Tables and their columns
 │   └── decisions/                  Technical choices and their reasons
@@ -186,6 +205,7 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- The agent does not use the database yet: the typed tools come at the next stage. Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
-- The agent has no tools yet: it can answer but cannot create or find requests.
+- No channel is connected yet: the message handler is exercised by the tests only. Slack and Email come at the next stages.
+- The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
+- Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The local model is slow on a CPU and less reliable than hosted models on ambiguous messages.
