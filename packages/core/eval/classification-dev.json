@@ -1,0 +1,162 @@
+[
+  {
+    "type": "BUG",
+    "text": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+  },
+  {
+    "type": "BUG",
+    "text": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+  },
+  {
+    "type": "BUG",
+    "text": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis page blanche"
+  },
+  {
+    "type": "BUG",
+    "text": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus."
+  },
+  {
+    "type": "BUG",
+    "text": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos clients le demandent beaucoup."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'est envisageable ?"
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Il nous faudrait une application mobile pour que les commerciaux consultent le CRM en déplacement."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "idée : un tableau de bord avec le chiffre d'affaires par semaine directement dans le CRM, ça n'existe pas aujourd'hui"
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les descriptions, pas seulement dans les noms."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieurs villes à la fois."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il y a beaucoup de lignes. Possible de l'accélérer ?"
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "Pour l'export PDF des factures, ce serait bien d'avoir aussi le logo du client en en-tête, en plus des infos actuelles."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plus de la date de création svp"
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Suite à la nouvelle loi, il faut passer le taux de TVA des livres de 5,5 % à 7 % sur la boutique."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Notre marque change de nom au 1er janvier : merci de remplacer le logo et le nom dans tout le portail."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Finalement nous ne voulons plus la livraison gratuite dès 50 €, mais dès 80 €. Pouvez-vous modifier la règle ?"
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Bonjour, la mise en production prévue le 15 doit être décalée au 22, notre équipe ne sera pas prête pour la recette."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Dans le formulaire d'inscription, le champ téléphone doit devenir obligatoire et non plus facultatif comme validé au départ."
+  },
+  {
+    "type": "SUPPORT",
+    "text": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne trouve pas le menu."
+  },
+  {
+    "type": "SUPPORT",
+    "text": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est pas encore arrivé, que dois-je faire ?"
+  },
+  {
+    "type": "SUPPORT",
+    "text": "Est-ce qu'on peut importer nos anciens clients depuis un fichier Excel ? Si oui, quel format faut-il ?"
+  },
+  {
+    "type": "SUPPORT",
+    "text": "quelle est la différence entre un compte admin et un compte gestionnaire dans le portail ?"
+  },
+  {
+    "type": "SUPPORT",
+    "text": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Nous avons toujours le problème signalé lundi. Où en êtes-vous ?"
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Pour compléter ma demande REQ-0012 : le bug arrive aussi sur Firefox, pas seulement sur Chrome. Je vous joins une capture."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Je reviens vers vous concernant l'export CSV : ça plante encore ce matin, c'est bloquant pour notre clôture mensuelle."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il faudrait au moins 3 et 4 fois."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Relance : toujours aucune nouvelle pour le problème d'accents dans les emails, des clients se plaignent."
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "Bonjour, où en est la demande REQ-0042 ?"
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "Est-ce que vous avez une date pour la correction du bouton de validation ?"
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "quel est le statut de ma demande sur le SSO ?"
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et quand il sera en ligne ?"
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "Des nouvelles de REQ-0007 ?"
+  },
+  {
+    "type": "OTHER",
+    "text": "Merci beaucoup pour votre réactivité, tout fonctionne parfaitement maintenant !"
+  },
+  {
+    "type": "OTHER",
+    "text": "Bonjour, je serai absent du 3 au 10 août, merci de contacter Paul pour toute urgence."
+  },
+  {
+    "type": "OTHER",
+    "text": "Pouvons-nous décaler notre point hebdomadaire de jeudi à vendredi 10h ?"
+  },
+  {
+    "type": "OTHER",
+    "text": "Découvrez notre offre exceptionnelle sur les imprimantes laser, -40 % cette semaine seulement !"
+  },
+  {
+    "type": "OTHER",
+    "text": "Bonne année à toute l'équipe et merci pour cette collaboration !"
+  }
+]

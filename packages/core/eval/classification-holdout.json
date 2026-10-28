@@ -1,0 +1,141 @@
+[
+  {
+    "type": "BUG",
+    "text": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregistrer et tout disparaît."
+  },
+  {
+    "type": "BUG",
+    "text": "Bonjour, la facture n° 2026-118 affiche une TVA à 0 € alors que le taux est bien paramétré."
+  },
+  {
+    "type": "BUG",
+    "text": "urgent : impossible de passer commande, le paiement tourne dans le vide puis timeout"
+  },
+  {
+    "type": "BUG",
+    "text": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+  },
+  {
+    "type": "BUG",
+    "text": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des produits de côté ?"
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Nous aurions besoin d'un module de prise de rendez-vous en ligne dans le portail."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Est-ce qu'on pourrait avoir des notifications par SMS quand une commande est expédiée ? Ça n'existe pas pour l'instant."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "Bonjour, on voudrait intégrer le CRM à notre outil de téléphonie pour voir la fiche du client qui appelle."
+  },
+  {
+    "type": "FEATURE_REQUEST",
+    "text": "une fonction de chat en direct avec le service client sur la boutique, ce serait top"
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes exportées."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "La page produit est correcte, mais on aimerait afficher plus de photos dans la galerie, 10 au lieu de 4."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "Bonjour, la recherche du portail fonctionne mais elle gagnerait à proposer des suggestions pendant la frappe."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le mois précédent."
+  },
+  {
+    "type": "EVOLUTION",
+    "text": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de l'email"
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €, merci de mettre à jour."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Le texte des conditions générales doit être remplacé par la nouvelle version validée par notre juriste (en pièce jointe)."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Finalement, nous préférons que le bouton principal soit vert et non bleu comme sur la maquette validée."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "Bonjour, le lot 2 du projet portail est retiré du périmètre, nous le reporterons à l'année prochaine."
+  },
+  {
+    "type": "CHANGE_REQUEST",
+    "text": "La règle de relance automatique des devis doit passer de 7 jours à 14 jours."
+  },
+  { "type": "SUPPORT", "text": "Comment je fais pour exporter la liste de mes clients en PDF ?" },
+  {
+    "type": "SUPPORT",
+    "text": "Bonjour, je n'arrive pas à trouver où on change l'adresse de facturation de notre compte."
+  },
+  {
+    "type": "SUPPORT",
+    "text": "Est-ce que le portail fonctionne sur tablette ou seulement sur ordinateur ?"
+  },
+  {
+    "type": "SUPPORT",
+    "text": "Notre nouvelle collègue n'a pas reçu son invitation au CRM, pouvez-vous m'expliquer comment la renvoyer ?"
+  },
+  { "type": "SUPPORT", "text": "c'est quoi la limite de taille pour les images produits ?" },
+  {
+    "type": "FOLLOW_UP",
+    "context": "Bonjour, le total du panier est faux quand on applique un code promo.",
+    "text": "J'ai refait le test ce matin avec un autre code, même résultat : la remise est appliquée deux fois."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Pour ma demande REQ-0031 : j'ai oublié de préciser que ça concerne uniquement les comptes professionnels."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "context": "Il nous faudrait une application mobile pour les commerciaux.",
+    "text": "En complément : elle devrait fonctionner hors connexion, nos commerciaux sont souvent en zone blanche."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Je relance au sujet du bug d'export signalé la semaine dernière, ça bloque toujours notre équipe."
+  },
+  {
+    "type": "FOLLOW_UP",
+    "text": "Le problème de connexion dont je vous ai parlé hier est revenu ce matin, voici le message d'erreur : « session expirée »."
+  },
+  { "type": "STATUS_REQUEST", "text": "Bonjour, avez-vous avancé sur REQ-0019 ?" },
+  {
+    "type": "STATUS_REQUEST",
+    "context": "Pourriez-vous ajouter une liste de souhaits sur la boutique ?",
+    "text": "Où en êtes-vous ?"
+  },
+  {
+    "type": "STATUS_REQUEST",
+    "text": "Est-ce que la correction des dates au format américain est déjà en production ?"
+  },
+  { "type": "STATUS_REQUEST", "text": "Une idée de quand sera livré le module de rendez-vous ?" },
+  { "type": "STATUS_REQUEST", "text": "statut REQ-0050 svp" },
+  { "type": "OTHER", "text": "Parfait, merci à vous !" },
+  {
+    "type": "OTHER",
+    "text": "Je vous transfère l'invitation pour la réunion de lancement de mardi."
+  },
+  { "type": "OTHER", "text": "Gagnez un iPhone en répondant à notre enquête de satisfaction !" },
+  {
+    "type": "OTHER",
+    "text": "Bonjour, je change de poste le mois prochain, mon successeur sera Marc Dupont."
+  },
+  { "type": "OTHER", "text": "Bonnes vacances à toute l'équipe, à la rentrée !" }
+]
