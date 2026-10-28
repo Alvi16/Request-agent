@@ -12,6 +12,8 @@
     "dev": "pnpm --filter @request-agent/server dev",
     "build": "pnpm --filter @request-agent/server build",
     "start": "pnpm --filter @request-agent/server start",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "lint": "oxlint",
