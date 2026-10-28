@@ -5,14 +5,15 @@
   "description": "Mastra server: agent, tools and channel adapters",
   "type": "module",
   "scripts": {
-    "dev": "mastra dev",
+    "dev": "mastra dev --env ../../.env",
     "build": "mastra build",
-    "start": "mastra start",
+    "start": "mastra start --env ../../.env",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
     "@mastra/core": "catalog:",
+    "@request-agent/core": "workspace:*",
     "ollama-ai-provider-v2": "catalog:",
     "zod": "catalog:"
   },
