@@ -44,6 +44,7 @@ The agent works on requests only through ten typed tools: `identify_contact`, `i
 - A verified sender reaches only the requests of the projects they work on, and the requests they made. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
 - The project is identified by fixed rules before the model runs: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the result is ambiguous and the model cannot pick one at random.
 - The model makes at most 5 calls per message, tool inputs have bounded sizes, a message is filed only once, and every change is written to the request history.
+- The answer to the sender is written by the code from what the tools did, never by the model. A message the agent leaves unhandled is filed for a review, so none is lost.
 - The application connects to the database with the `request_agent_app` role, which cannot delete rows, change the schema or rewrite the history.
 
 The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).

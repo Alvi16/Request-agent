@@ -7,10 +7,11 @@ This page describes what happens to a message received by the agent, how it is c
 1. **The channel adapter stores the message**, with its conversation, and tells whether the channel verified its sender.
 2. **The code identifies the sender and the project**, with fixed rules: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the project is ambiguous.
 3. **The classifier reads the message** and the last 4 messages of its conversation. In one call to the model, without tools, it gives the type, the priority, a title and a one-sentence summary. Its confidence is read from the probabilities of the tokens of the type, not written by the model. If this step fails, nothing is written.
-4. **The agent decides what to do.** It receives the facts computed by the code (sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request, give a status or ask a question.
-5. **The code checks the answer.** An answer citing a request reference that no tool returned and the sender did not write is replaced by a neutral message.
+4. **The agent decides what to do.** It receives the facts computed by the code (sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request, give a status or ask a question. It stops as soon as the message is filed, added to a request or answered by a question.
+5. **The code makes sure no message is lost.** If the agent ends without filing or answering the message, and the message is not clearly `OTHER`, the code files it for a review, with the reason `UNHANDLED`.
+6. **The code writes the answer to the sender** from what the tools did: the reference of the request, the message added to a request, the status, the clarification question or the requests found. The text written by the model is never sent: a small local model mixes its reasoning with its answer, and can promise actions that nobody performed. No answer is sent for a message that is clearly `OTHER`, such as thanks, which also avoids loops of automatic replies by email.
 
-The agent makes at most 5 calls to the model per message. Thinking mode is turned off, because it more than triples the answer time on a CPU.
+The agent makes at most 5 calls to the model per message. Thinking mode is turned off, because it more than triples the answer time on a CPU. Answers are written in French.
 
 ## Request types
 
@@ -51,7 +52,7 @@ A new request waits for a person (`needs_review`) when at least one of these is 
 
 The threshold is set with `CLASSIFICATION_REVIEW_THRESHOLD`, between 0 and 1. The code decides the review, never the model.
 
-A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
+A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request, and the agent is not run, which saves its calls. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
 
 ## What the agent does
 
@@ -59,15 +60,15 @@ A message classified `OTHER` with a confidence above the threshold, such as than
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `FOLLOW_UP` or `STATUS_REQUEST`  | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request |
 | Another type, project identified | Files the message as a new request                                                                                                                                                      |
-| Another type, project not clear  | Asks the sender which project, with `request_clarification`                                                                                                                             |
-| `OTHER`                          | Files nothing and answers briefly                                                                                                                                                       |
+| Another type, project not clear  | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                      |
+| `OTHER`, confident               | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                   |
 | Unverified sender                | Only files the message, which waits for a review                                                                                                                                        |
 
 When `create_request` files a message, the type, priority, title and summary come from the classification, and the description is the message itself. The agent cannot change them: it only chooses the project when none was identified.
 
 ## Clarification requests
 
-`request_clarification` records the question in the history of the request (`CLARIFICATION_REQUESTED`), sets its status to `WAITING_FOR_INFO` and sends it to review. The agent asks the same question in its answer.
+`request_clarification` records the question in the history of the request (`CLARIFICATION_REQUESTED`), sets its status to `WAITING_FOR_INFO` and sends it to review. The question is the answer sent to the sender.
 
 When the requester answers in the same conversation, the agent adds the answer to the request, and the status goes back to `NEW`. Only an answer from the requester does that. The agent asks at most 2 questions per request: after that, the request is left to a person.
 
