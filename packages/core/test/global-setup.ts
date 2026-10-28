@@ -9,13 +9,6 @@ import { connectDatabase } from "../src/db/client.ts";
 import { migrateDatabase } from "../src/db/migrate.ts";
 import { loadAppDatabaseEnv, loadTestDatabaseEnv } from "../src/env.ts";
 
-declare module "vitest" {
-  export interface ProvidedContext {
-    testDatabaseUrl: string;
-    testAppDatabaseUrl: string;
-  }
-}
-
 // The tests empty every table, so they only run on a database whose name marks it as disposable.
 const testDatabaseName = /^[a-z0-9_]+_test$/;
 

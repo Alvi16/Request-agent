@@ -4,6 +4,14 @@ import { afterAll, beforeAll, beforeEach, inject } from "vitest";
 import { connectDatabase, type Database, type DatabaseConnection } from "../src/db/client.ts";
 import * as schema from "../src/db/schema.ts";
 
+// Values given by the global setup to every test file.
+declare module "vitest" {
+  export interface ProvidedContext {
+    testDatabaseUrl: string;
+    testAppDatabaseUrl: string;
+  }
+}
+
 const tables = [
   schema.attachments,
   schema.events,
