@@ -4,13 +4,15 @@ import { fileURLToPath } from "node:url";
 import { Client } from "pg";
 import type { TestProject } from "vitest/node";
 
+import { configureAppRole } from "../src/db/app-role.ts";
 import { connectDatabase } from "../src/db/client.ts";
 import { migrateDatabase } from "../src/db/migrate.ts";
-import { loadTestDatabaseEnv } from "../src/env.ts";
+import { loadAppDatabaseEnv, loadTestDatabaseEnv } from "../src/env.ts";
 
 declare module "vitest" {
   export interface ProvidedContext {
     testDatabaseUrl: string;
+    testAppDatabaseUrl: string;
   }
 }
 
@@ -18,6 +20,15 @@ declare module "vitest" {
 const testDatabaseName = /^[a-z0-9_]+_test$/;
 
 const rootEnvFile = fileURLToPath(new URL("../../../.env", import.meta.url));
+
+// Same test database, reached with the restricted role used by the application.
+function asAppRole(testDatabaseUrl: URL, appDatabaseUrl: string): string {
+  const appUrl = new URL(appDatabaseUrl);
+  const url = new URL(testDatabaseUrl);
+  url.username = appUrl.username;
+  url.password = appUrl.password;
+  return url.href;
+}
 
 async function createDatabaseIfMissing(databaseUrl: URL, name: string): Promise<void> {
   const maintenanceUrl = new URL(databaseUrl);
@@ -40,6 +51,7 @@ export default async function setup(project: TestProject): Promise<void> {
     process.loadEnvFile(rootEnvFile);
   }
   const { TEST_DATABASE_URL } = loadTestDatabaseEnv();
+  const { APP_DATABASE_URL } = loadAppDatabaseEnv();
   const databaseUrl = new URL(TEST_DATABASE_URL);
   const name = decodeURIComponent(databaseUrl.pathname.slice(1));
   if (!testDatabaseName.test(name)) {
@@ -59,8 +71,10 @@ export default async function setup(project: TestProject): Promise<void> {
   const { db, close } = connectDatabase(TEST_DATABASE_URL);
   try {
     await migrateDatabase(db);
+    await configureAppRole(db, APP_DATABASE_URL);
   } finally {
     await close();
   }
   project.provide("testDatabaseUrl", TEST_DATABASE_URL);
+  project.provide("testAppDatabaseUrl", asAppRole(databaseUrl, APP_DATABASE_URL));
 }

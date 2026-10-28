@@ -69,16 +69,19 @@ One file, at the root, configures the whole project. It is created from its temp
 cp .env.example .env
 ```
 
-| Variable            | Role                                                                  | Example value                                                            |
-| ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `POSTGRES_PASSWORD` | Password of the `request_agent` database user, used by Docker Compose | `change-me`                                                              |
-| `POSTGRES_PORT`     | Port of the database on the machine (localhost only)                  | `5433`                                                                   |
-| `DATABASE_URL`      | Connection to the development database                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`      |
-| `TEST_DATABASE_URL` | Connection to the test database. Its name must end with `_test`       | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test` |
-| `OLLAMA_BASE_URL`   | Ollama API endpoint. Must end with `/api`                             | `http://127.0.0.1:11434/api`                                             |
-| `OLLAMA_MODEL`      | Model used by the agent. It must be pulled first                      | `ornith:9b`                                                              |
+| Variable            | Role                                                                                           | Example value                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD` | Password of the `request_agent` database user, used by Docker Compose                          | `change-me`                                                                 |
+| `POSTGRES_PORT`     | Port of the database on the machine (localhost only)                                           | `5433`                                                                      |
+| `DATABASE_URL`      | Connection to the development database, as its owner. Used by the migrations and the demo data | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
+| `APP_DATABASE_URL`  | Connection used by the application, with the restricted `request_agent_app` role               | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
+| `TEST_DATABASE_URL` | Connection to the test database. Its name must end with `_test`                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
+| `OLLAMA_BASE_URL`   | Ollama API endpoint. Must end with `/api`                                                      | `http://127.0.0.1:11434/api`                                                |
+| `OLLAMA_MODEL`      | Model used by the agent. It must be pulled first                                               | `ornith:9b`                                                                 |
 
-Set a password of your choice, and use the same password and port in both URLs. Docker Compose refuses to start the database without a password. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
+Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
+
+Choose another password for `APP_DATABASE_URL`. `pnpm db:migrate` applies it to the `request_agent_app` role each time it runs, so it can be changed later.
 
 The server refuses to start and names the faulty variable when one of them is missing or invalid.
 
@@ -92,7 +95,7 @@ pnpm db:up
 
 Its data is kept in a Docker volume. `pnpm db:down` stops it without deleting the data.
 
-Create the tables, then insert the fictitious demo data. Both commands can be run again safely:
+Create the tables and the application role, then insert the fictitious demo data. Both commands can be run again safely:
 
 ```bash
 pnpm db:migrate
