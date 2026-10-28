@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model, the agent tools and the classification are in place. The Slack and Email channels come next.
+The foundations, the data model, the agent tools, the classification and the Slack channel are in place. The Email channel comes next.
 
 | Feature                                                          | Priority | Status      |
 | ---------------------------------------------------------------- | -------- | ----------- |
@@ -14,7 +14,7 @@ The foundations, the data model, the agent tools and the classification are in p
 | Data model and structured storage with history and provenance    | P0       | Done        |
 | Typed tools (create, update, find, list, status, search)         | P0       | Done        |
 | Classification and uncertainty handling                          | P0       | Done        |
-| Slack integration                                                | P0       | Not started |
+| Slack integration                                                | P0       | Done        |
 | Email integration                                                | P0       | Not started |
 | Email conversations, duplicates, human validation, web interface | P1       | Not started |
 | Embeddable web widget                                            | P2       | Not planned |
@@ -24,7 +24,8 @@ The foundations, the data model, the agent tools and the classification are in p
 
 ```mermaid
 flowchart LR
-    Channels["Slack, Email<br/>next stages"] -.-> Handler["Message handler<br/>apps/server"]
+    Slack["Slack<br/>Socket Mode"] --> Handler["Message handler<br/>apps/server"]
+    Email["Email<br/>next stage"] -.-> Handler
     Handler --> Classifier["Classifier<br/>packages/core"]
     Classifier --> Ollama
     Handler --> Agent[Request agent]
@@ -83,16 +84,18 @@ One file, at the root, configures the whole project. It is created from its temp
 cp .env.example .env
 ```
 
-| Variable                          | Role                                                                                           | Example value                                                               |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`               | Password of the `request_agent` database user, used by Docker Compose                          | `change-me`                                                                 |
-| `POSTGRES_PORT`                   | Port of the database on the machine (localhost only)                                           | `5433`                                                                      |
-| `DATABASE_URL`                    | Connection to the development database, as its owner. Used by the migrations and the demo data | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
-| `APP_DATABASE_URL`                | Connection used by the application, with the restricted `request_agent_app` role               | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
-| `TEST_DATABASE_URL`               | Connection to the test database. Its name must end with `_test`                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
-| `OLLAMA_BASE_URL`                 | Ollama API endpoint. Must end with `/api`                                                      | `http://127.0.0.1:11434/api`                                                |
-| `OLLAMA_MODEL`                    | Model used by the agent. It must be pulled first                                               | `ornith:9b`                                                                 |
-| `CLASSIFICATION_REVIEW_THRESHOLD` | Optional. Below this confidence, from 0 to 1, a request waits for a human review               | `0.8` (default)                                                             |
+| Variable                          | Role                                                                                              | Example value                                                               |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`               | Password of the `request_agent` database user, used by Docker Compose                             | `change-me`                                                                 |
+| `POSTGRES_PORT`                   | Port of the database on the machine (localhost only)                                              | `5433`                                                                      |
+| `DATABASE_URL`                    | Connection to the development database, as its owner. Used by the migrations and the demo data    | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
+| `APP_DATABASE_URL`                | Connection used by the application, with the restricted `request_agent_app` role                  | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
+| `TEST_DATABASE_URL`               | Connection to the test database. Its name must end with `_test`                                   | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
+| `OLLAMA_BASE_URL`                 | Ollama API endpoint. Must end with `/api`                                                         | `http://127.0.0.1:11434/api`                                                |
+| `OLLAMA_MODEL`                    | Model used by the agent. It must be pulled first                                                  | `ornith:9b`                                                                 |
+| `CLASSIFICATION_REVIEW_THRESHOLD` | Optional. Below this confidence, from 0 to 1, a request waits for a human review                  | `0.8` (default)                                                             |
+| `SLACK_BOT_TOKEN`                 | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack | `xoxb-…`                                                                    |
+| `SLACK_APP_TOKEN`                 | Optional. App-level token with the `connections:write` scope, for Socket Mode                     | `xapp-…`                                                                    |
 
 Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
@@ -138,6 +141,21 @@ pnpm build
 pnpm start
 ```
 
+## Connecting Slack
+
+The agent connects to Slack in Socket Mode: the server opens the connection, so no public address or tunnel is needed. Use a test workspace, never a company workspace with real data.
+
+1. Create a free workspace at [slack.com/get-started](https://slack.com/get-started#/createnew).
+2. At [api.slack.com/apps](https://api.slack.com/apps), select **Create New App**, then **From a manifest**, choose the workspace, and paste the content of [`apps/server/slack-app-manifest.yaml`](apps/server/slack-app-manifest.yaml).
+3. In **Basic Information**, under **App-Level Tokens**, generate a token with the `connections:write` scope, and set it as `SLACK_APP_TOKEN` in `.env`.
+4. In **Install App**, install the app to the workspace, and set the **Bot User OAuth Token** as `SLACK_BOT_TOKEN` in `.env`.
+5. Start the server with `pnpm dev`. The log shows `Slack adapter listening`.
+6. In Slack, invite the bot to a channel with `/invite @Request agent`, then mention it, or send it a direct message.
+
+The agent handles mentions, direct messages, and replies in the threads it already takes part in. It ignores the other messages of a channel, without storing them. It adds 👀 to a message it handles, then answers in its thread, usually 2 to 4 minutes later on a CPU.
+
+A Slack user only gets rights when a contact with their Slack member ID exists in the database (`contacts.slack_user_id`). A channel dedicated to a project is declared in `project_channels`, with the channel ID.
+
 ## Usage
 
 Send a message to the agent:
@@ -148,7 +166,7 @@ curl -X POST http://localhost:4111/api/agents/request-agent/generate \
   -d '{"messages":[{"role":"user","content":"Bonjour"}]}'
 ```
 
-The JSON response contains the answer in the `text` field. This route reaches the agent without its request tools: they are only given to messages received through a channel, which will be connected at the next stages.
+The JSON response contains the answer in the `text` field. This route reaches the agent without its request tools: they are only given to messages received through a channel, such as Slack.
 
 ## Tests and code quality
 
@@ -166,8 +184,14 @@ The JSON response contains the answer in the `text` field. This route reaches th
 Request-agent/
 ├── apps/
 │   └── server/                     Mastra server
+│       ├── slack-app-manifest.yaml Settings of the Slack app
 │       └── src/
 │           ├── config.ts           Environment variables validation
+│           ├── slack/
+│           │   ├── events.ts       Which Slack events reach the agent
+│           │   ├── adapter.ts      Stores, queues and answers Slack messages
+│           │   ├── connect.ts      Socket Mode and Web API clients
+│           │   └── start.ts        Starts Slack with the server when it is configured
 │           └── mastra/
 │               ├── index.ts        Mastra entry point: registers the agent
 │               ├── agents/
@@ -183,6 +207,8 @@ Request-agent/
 │       ├── src/
 │       │   ├── env.ts              Environment variables validation
 │       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
+│       │   ├── messages/
+│       │   │   └── inbox.ts        Stores channel messages once, with their conversation
 │       │   ├── classification/
 │       │   │   ├── taxonomy.ts     Definitions of the request types and priorities
 │       │   │   └── classifier.ts   Classification call to Ollama, with its confidence
@@ -219,7 +245,8 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- No channel is connected yet: the message handler is exercised by the tests only. Slack and Email come at the next stages.
+- Email is not connected yet: it comes at the next stage.
+- Slack messages are handled one at a time, and the queue lives in memory: a message received while the server restarts stays stored, but is not handled again automatically.
 - The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The local model is slow on a CPU: classifying a message takes from 20 s to 60 s, and the agent adds its own calls. Its classification is measured on 80 fictitious messages only, described in [`docs/agent.md`](docs/agent.md).
