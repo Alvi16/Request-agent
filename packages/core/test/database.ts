@@ -1,0 +1,45 @@
+import { getTableName, sql } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, inject } from "vitest";
+
+import { connectDatabase, type Database, type DatabaseConnection } from "../src/db/client.ts";
+import * as schema from "../src/db/schema.ts";
+
+const tables = [
+  schema.attachments,
+  schema.events,
+  schema.messages,
+  schema.conversations,
+  schema.requests,
+  schema.projectChannels,
+  schema.projectContacts,
+  schema.projects,
+  schema.contacts,
+  schema.organizations,
+];
+
+// Connects to the test database for the current file and empties it before each test.
+export function useTestDatabase(): () => Database {
+  let connection: DatabaseConnection | undefined;
+
+  beforeAll(() => {
+    connection = connectDatabase(inject("testDatabaseUrl"));
+  });
+
+  beforeEach(async () => {
+    const names = tables.map((table) => `"${getTableName(table)}"`).join(", ");
+    await getDatabase().execute(sql.raw(`truncate ${names} restart identity`));
+  });
+
+  afterAll(async () => {
+    await connection?.close();
+  });
+
+  function getDatabase(): Database {
+    if (connection === undefined) {
+      throw new Error("The test database is only available inside tests");
+    }
+    return connection.db;
+  }
+
+  return getDatabase;
+}

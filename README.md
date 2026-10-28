@@ -4,14 +4,14 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The project is at its foundation stage.
+The foundations and the data model are in place. The agent tools come next.
 
 | Feature                                                          | Priority | Status      |
 | ---------------------------------------------------------------- | -------- | ----------- |
 | Monorepo, TypeScript, lint, format and test tooling              | —        | Done        |
 | Mastra agent connected to a local Ollama model                   | P0       | Done        |
 | Local PostgreSQL database                                        | P0       | Done        |
-| Data model and structured storage with history and provenance    | P0       | Not started |
+| Data model and structured storage with history and provenance    | P0       | Done        |
 | Typed tools (create, update, find, list, status, search)         | P0       | Not started |
 | Classification and uncertainty handling                          | P0       | Not started |
 | Slack integration                                                | P0       | Not started |
@@ -27,10 +27,11 @@ flowchart LR
     Client[HTTP client] --> Server["Mastra server<br/>apps/server"]
     Server --> Agent[Request agent]
     Agent --> Ollama["Ollama<br/>local model"]
-    Server -. next stage .-> Postgres[("PostgreSQL<br/>Docker")]
+    Core["Business core<br/>packages/core"] --> Postgres[("PostgreSQL<br/>Docker")]
+    Agent -. next stage .-> Core
 ```
 
-The PostgreSQL database already runs and will store the requests from the next stage. Slack and Email will be added as input adapters in front of the same agent, and the business logic will live in a separate package with no dependency on any channel.
+The business core holds the data model and the database access, with no dependency on any channel. The agent will use it through typed tools at the next stage. Slack and Email will be added as input adapters in front of the same agent. The data model is described in [`docs/data-model.md`](docs/data-model.md).
 
 The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
 
@@ -69,14 +70,16 @@ cp .env.example .env
 cp apps/server/.env.example apps/server/.env
 ```
 
-`.env`, at the root, configures the database started by Docker Compose:
+`.env`, at the root, configures the database:
 
-| Variable            | Role                                                 | Example value |
-| ------------------- | ---------------------------------------------------- | ------------- |
-| `POSTGRES_PASSWORD` | Password of the `request_agent` database user        | `change-me`   |
-| `POSTGRES_PORT`     | Port of the database on the machine (localhost only) | `5433`        |
+| Variable            | Role                                                                  | Example value                                                            |
+| ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `POSTGRES_PASSWORD` | Password of the `request_agent` database user, used by Docker Compose | `change-me`                                                              |
+| `POSTGRES_PORT`     | Port of the database on the machine (localhost only)                  | `5433`                                                                   |
+| `DATABASE_URL`      | Connection to the development database                                | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`      |
+| `TEST_DATABASE_URL` | Connection to the test database. Its name must end with `_test`       | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test` |
 
-Set a password of your choice. Docker Compose refuses to start the database without one. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
+Set a password of your choice, and use the same password and port in both URLs. Docker Compose refuses to start the database without a password. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
 `apps/server/.env` configures the server:
 
@@ -96,6 +99,13 @@ pnpm db:up
 ```
 
 Its data is kept in a Docker volume. `pnpm db:down` stops it without deleting the data.
+
+Create the tables, then insert the fictitious demo data. Both commands can be run again safely:
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+```
 
 Ollama must be running. Start it in a separate terminal if it is not already running as a service:
 
@@ -132,12 +142,12 @@ The JSON response contains the answer in the `text` field.
 
 ## Tests and code quality
 
-| Command             | What it checks                                                    |
-| ------------------- | ----------------------------------------------------------------- |
-| `pnpm test`         | Unit tests (Vitest). The model is simulated, Ollama is not needed |
-| `pnpm typecheck`    | TypeScript types, in strict mode                                  |
-| `pnpm lint`         | Lint rules with oxlint, including type-aware rules                |
-| `pnpm format:check` | Formatting with Prettier. `pnpm format` fixes it                  |
+| Command             | What it checks                                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`         | Tests (Vitest). The model is simulated, Ollama is not needed. The data model tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`    | TypeScript types, in strict mode                                                                                                                                              |
+| `pnpm lint`         | Lint rules with oxlint, including type-aware rules                                                                                                                            |
+| `pnpm format:check` | Formatting with Prettier. `pnpm format` fixes it                                                                                                                              |
 
 ## Project structure
 
@@ -152,7 +162,20 @@ Request-agent/
 │               ├── index.ts        Mastra entry point: registers the agent
 │               └── agents/
 │                   └── request-agent.ts
+├── packages/
+│   └── core/                       Business core, independent of any channel
+│       ├── drizzle/                SQL migrations, generated from the schema
+│       ├── scripts/                Migration and demo data commands
+│       ├── src/
+│       │   ├── env.ts              Database environment variables validation
+│       │   └── db/
+│       │       ├── schema.ts       Data model
+│       │       ├── client.ts       Database connection
+│       │       ├── migrate.ts      Migration runner
+│       │       └── seed.ts         Fictitious demo data
+│       └── test/                   Test database setup
 ├── docs/
+│   ├── data-model.md               Tables and their columns
 │   └── decisions/                  Technical choices and their reasons
 ├── .github/
 │   └── pull_request_template.md
@@ -169,6 +192,6 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- The database runs but is not used yet: the data model is added at the next stage. Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
+- The agent does not use the database yet: the typed tools come at the next stage. Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The agent has no tools yet: it can answer but cannot create or find requests.
 - The local model is slow on a CPU and less reliable than hosted models on ambiguous messages.
