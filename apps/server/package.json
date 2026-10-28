@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@mastra/core": "catalog:",
+    "@request-agent/core": "workspace:*",
     "ollama-ai-provider-v2": "catalog:",
     "zod": "catalog:"
   },
