@@ -76,7 +76,7 @@ cp apps/server/.env.example apps/server/.env
 | `POSTGRES_PASSWORD` | Password of the `request_agent` database user        | `change-me`   |
 | `POSTGRES_PORT`     | Port of the database on the machine (localhost only) | `5433`        |
 
-Set a password of your choice. Docker Compose refuses to start the database without one.
+Set a password of your choice. Docker Compose refuses to start the database without one. The password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
 `apps/server/.env` configures the server:
 
