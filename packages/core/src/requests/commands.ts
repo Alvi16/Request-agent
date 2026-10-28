@@ -350,6 +350,26 @@ export function addMessageToRequest(
     if (request.status === "WAITING_FOR_INFO" && isRequester) {
       await setStatus(tx, request.id, "WAITING_FOR_INFO", "NEW", message);
     }
+    // When the requester names the project of a request filed without one, such as in the answer
+    // to a clarification, the request gets it, by the same rules that identify a new request's.
+    const named = turn.project.status === "identified" ? turn.project.projectId : undefined;
+    if (
+      isRequester &&
+      request.projectId === null &&
+      named !== undefined &&
+      assignableProjectIds(turn).includes(named)
+    ) {
+      await tx.update(requests).set({ projectId: named }).where(eq(requests.id, request.id));
+      const projectKey = (await loadView(tx, request.id)).projectKey;
+      await tx.insert(events).values({
+        requestId: request.id,
+        type: "UPDATED",
+        actorType: "SYSTEM",
+        channel: message.channel,
+        messageId: message.id,
+        data: { changes: { projectKey: { from: null, to: projectKey } } },
+      });
+    }
     await tx.insert(events).values({
       requestId: request.id,
       type: "MESSAGE_ADDED",

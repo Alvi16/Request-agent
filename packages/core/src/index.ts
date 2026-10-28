@@ -13,7 +13,14 @@ export {
   type Classifier,
 } from "./classification/classifier.ts";
 export { requestPriorityDefinitions, requestTypeDefinitions } from "./classification/taxonomy.ts";
-export { loadClassifierEnv, loadDatabaseEnv, type ClassifierEnv, type DatabaseEnv } from "./env.ts";
+export {
+  loadAppDatabaseEnv,
+  loadClassifierEnv,
+  loadDatabaseEnv,
+  type AppDatabaseEnv,
+  type ClassifierEnv,
+  type DatabaseEnv,
+} from "./env.ts";
 export {
   classifyTurn,
   conversationContext,
@@ -55,3 +62,10 @@ export {
 } from "./requests/turn.ts";
 export type { RequestView, Result } from "./requests/views.ts";
 export { wrapUntrusted } from "./untrusted.ts";
+export {
+  isKnownConversation,
+  storeInboundMessage,
+  storeOutboundMessage,
+  type ChannelMessage,
+  type StoredMessage,
+} from "./messages/inbox.ts";

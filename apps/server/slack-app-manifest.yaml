@@ -1,0 +1,41 @@
+# Slack app for the request agent, in Socket Mode: the server opens the connection to Slack, so no
+# public URL is needed. Create the app from this manifest at https://api.slack.com/apps.
+display_information:
+  name: Request agent
+  description: Files, finds and follows requests about the company's projects.
+features:
+  app_home:
+    home_tab_enabled: false
+    # Lets people send direct messages to the agent.
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: request-agent
+    always_online: true
+oauth_config:
+  scopes:
+    bot:
+      # Mentions of the agent in channels it was invited to.
+      - app_mentions:read
+      # Replies in the threads the agent follows, in the public and private channels it was
+      # invited to. Other messages of these channels are ignored and not stored.
+      - channels:history
+      - groups:history
+      # Direct messages to the agent.
+      - im:history
+      # Answers in threads.
+      - chat:write
+      # The reaction that tells the sender the message is being handled.
+      - reactions:write
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.channels
+      - message.groups
+      - message.im
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

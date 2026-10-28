@@ -13,6 +13,8 @@ allowBuilds:
 
 catalog:
   "@mastra/core": 1.79.0
+  "@slack/socket-mode": 3.1.0
+  "@slack/web-api": 8.2.0
   "@types/node": 26.6.5
   "@types/pg": 8.23.1
   drizzle-kit: 0.31.11
