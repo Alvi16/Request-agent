@@ -23,7 +23,32 @@ const slackEnvSchema = z
     message: "SLACK_BOT_TOKEN and SLACK_APP_TOKEN must be set together",
   });
 
+const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
+
+// Email is optional, like Slack: without an IMAP server, the server runs without it.
+const emailEnvSchema = z
+  .object({
+    EMAIL_USER: z.string().min(1),
+    EMAIL_PASSWORD: z.string().min(1),
+    EMAIL_ADDRESS: z.email(),
+    EMAIL_IMAP_HOST: z.string().min(1),
+    EMAIL_IMAP_PORT: z.coerce.number().int().positive(),
+    EMAIL_SMTP_HOST: z.string().min(1),
+    EMAIL_SMTP_PORT: z.coerce.number().int().positive(),
+    EMAIL_SECURE: z.stringbool().default(true),
+    EMAIL_TRUSTED_AUTHSERV_ID: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().optional(),
+    ),
+    EMAIL_TRUST_LOCAL_SENDERS: z.stringbool().default(false),
+  })
+  .refine((env) => !env.EMAIL_TRUST_LOCAL_SENDERS || localHosts.has(env.EMAIL_IMAP_HOST), {
+    message: "EMAIL_TRUST_LOCAL_SENDERS is only allowed with a mailbox on this machine",
+    path: ["EMAIL_TRUST_LOCAL_SENDERS"],
+  });
+
 export type Env = z.infer<typeof envSchema>;
+export type EmailEnv = z.infer<typeof emailEnvSchema>;
 export interface SlackTokens {
   botToken: string;
   appToken: string;
@@ -48,4 +73,12 @@ export function loadSlackTokens(source: NodeJS.ProcessEnv = process.env): SlackT
     return undefined;
   }
   return { botToken: env.SLACK_BOT_TOKEN, appToken: env.SLACK_APP_TOKEN };
+}
+
+// The mailbox settings, or undefined when email is not configured.
+export function loadEmailEnv(source: NodeJS.ProcessEnv = process.env): EmailEnv | undefined {
+  if (source.EMAIL_IMAP_HOST === undefined || source.EMAIL_IMAP_HOST === "") {
+    return undefined;
+  }
+  return parse(emailEnvSchema, source);
 }

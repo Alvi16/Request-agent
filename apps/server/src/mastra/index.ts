@@ -1,7 +1,9 @@
 import { Mastra } from "@mastra/core/mastra";
 import { createOllama } from "ollama-ai-provider-v2";
 
+import { type ChannelHandler, createChannelHandler } from "../channel-handler";
 import { loadEnv } from "../config";
+import { startEmailIfConfigured } from "../email/start";
 import { startSlackIfConfigured } from "../slack/start";
 import { createRequestAgent } from "./agents/request-agent";
 
@@ -13,9 +15,23 @@ export const mastra = new Mastra({
   agents: { requestAgent },
 });
 
-// Slack connects in the background: the server answers its API even while Slack is starting.
-startSlackIfConfigured(requestAgent, mastra.getLogger()).catch((error: unknown) => {
-  mastra.getLogger().error("Slack could not be started", {
-    error: error instanceof Error ? error.message : String(error),
+const logger = mastra.getLogger();
+
+// One database pool and one classifier for every channel, created only when a channel needs them.
+let channelHandler: ChannelHandler | undefined;
+const handler = () => {
+  channelHandler ??= createChannelHandler(requestAgent);
+  return channelHandler;
+};
+
+// Channels connect in the background: the server answers its API even while they are starting.
+for (const [name, start] of [
+  ["Slack", startSlackIfConfigured],
+  ["Email", startEmailIfConfigured],
+] as const) {
+  start(handler, logger).catch((error: unknown) => {
+    logger.error(`${name} could not be started`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
+}
