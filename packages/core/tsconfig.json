@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Scripts run directly with Node.js type stripping, which needs explicit .ts imports
+    // and only accepts TypeScript syntax that can be erased.
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src/**/*", "scripts/**/*", "test/**/*", "*.config.ts"]
+}

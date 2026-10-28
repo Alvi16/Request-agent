@@ -14,10 +14,14 @@ allowBuilds:
 catalog:
   "@mastra/core": 1.79.0
   "@types/node": 26.6.5
+  "@types/pg": 8.23.1
+  drizzle-kit: 0.31.11
+  drizzle-orm: 0.45.4
   mastra: 1.35.0
   ollama-ai-provider-v2: 4.1.0
   oxlint: 1.89.0
   oxlint-tsgolint: 7.0.2005
+  pg: 8.23.1
   prettier: 3.9.10
   typescript: 7.0.2
   vitest: 4.1.12
