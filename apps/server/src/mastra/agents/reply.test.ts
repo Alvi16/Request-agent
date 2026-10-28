@@ -26,7 +26,7 @@ describe("composeReply", () => {
       },
     ];
 
-    expect(composeReply(outcomes, undefined, false)).toBe(
+    expect(composeReply(outcomes, undefined)).toBe(
       "Votre demande est enregistrée sous la référence REQ-0007. Une personne de l'équipe va la vérifier.",
     );
   });
@@ -37,7 +37,7 @@ describe("composeReply", () => {
       { tool: "update_request", result: { ok: true, value: request } },
     ];
 
-    expect(composeReply(outcomes, undefined, false)).toBe("La demande REQ-0007 a été mise à jour.");
+    expect(composeReply(outcomes, undefined)).toBe("La demande REQ-0007 a été mise à jour.");
   });
 
   it("lists the requests found", () => {
@@ -45,7 +45,7 @@ describe("composeReply", () => {
       { tool: "search_requests", result: { ok: true, value: [request] } },
     ];
 
-    expect(composeReply(outcomes, undefined, false)).toBe(
+    expect(composeReply(outcomes, undefined)).toBe(
       "Demandes trouvées :\n- REQ-0007 : Export cassé (en cours de traitement)",
     );
   });
@@ -55,10 +55,6 @@ describe("composeReply", () => {
       { tool: "find_request", result: { ok: false, error: "NOT_FOUND" } },
     ];
 
-    expect(composeReply(outcomes, undefined, false)).toBe(fallbackReply);
-  });
-
-  it("sends nothing for a message that is clearly not a request", () => {
-    expect(composeReply([], undefined, true)).toBeNull();
+    expect(composeReply(outcomes, undefined)).toBe(fallbackReply);
   });
 });

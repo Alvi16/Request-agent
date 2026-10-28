@@ -196,12 +196,14 @@ describe("handleMessage", () => {
     });
   });
 
-  it("files nothing and sends nothing for thanks", async () => {
-    const { result } = await run([{ text: "De rien !" }], bruno, {
+  it("does not run the agent, file or answer anything for thanks", async () => {
+    const { model, result } = await run([{ text: "De rien !" }], bruno, {
       classification: { type: "OTHER", confidence: 0.95 },
     });
 
+    // No answer, which also avoids loops of automatic replies by email.
     expect(result).toEqual({ reply: null, filedBySystem: false });
+    expect(model.doGenerateCalls).toHaveLength(0);
     expect(await getDatabase().select().from(requests)).toHaveLength(0);
   });
 

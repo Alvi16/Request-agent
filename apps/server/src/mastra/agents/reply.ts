@@ -85,8 +85,7 @@ function describeOutcome(outcome: ToolOutcome): string | undefined {
 export function composeReply(
   outcomes: ToolOutcome[],
   filedBySystem: RequestView | undefined,
-  notARequest: boolean,
-): string | null {
+): string {
   if (filedBySystem !== undefined) {
     return `Votre message est enregistré sous la référence ${filedBySystem.reference}. Une personne de l'équipe va le traiter.`;
   }
@@ -100,7 +99,5 @@ export function composeReply(
   if (last !== undefined) {
     return last;
   }
-  // Thanks or an advertisement needs no answer, and answering could start a loop of automatic
-  // replies by email.
-  return notARequest ? null : fallbackReply;
+  return fallbackReply;
 }

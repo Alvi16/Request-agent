@@ -83,6 +83,10 @@ export async function handleMessage(
   settings: ClassificationSettings,
 ): Promise<HandledMessage> {
   const turn = await classifyTurn(db, await prepareTurn(db, input), settings);
+  // Thanks or an advertisement needs no action: the agent is not run, which saves its calls.
+  if (isNotARequest(turn)) {
+    return { reply: null, filedBySystem: false };
+  }
   const outcomes: ToolOutcome[] = [];
   await agent.generate(wrapUntrusted(turn.messageText), {
     system: await describeTurn(db, turn),
@@ -95,7 +99,7 @@ export async function handleMessage(
   const answered = outcomes.some((outcome) => outcome.result.ok);
   const filedBySystem = answered ? undefined : await fileUnhandledMessage(db, turn);
   return {
-    reply: composeReply(outcomes, filedBySystem, isNotARequest(turn)),
+    reply: composeReply(outcomes, filedBySystem),
     filedBySystem: filedBySystem !== undefined,
   };
 }
