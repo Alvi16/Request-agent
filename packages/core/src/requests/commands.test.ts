@@ -403,6 +403,34 @@ describe("requestClarification", () => {
     ]);
   });
 
+  it("files the request under the project the requester names in the answer", async () => {
+    const asked = await requestClarification(getAppDatabase(), await turnFor(alice), {
+      question: "Quel projet ?",
+    });
+    const reference = asked.ok ? asked.value.reference : "";
+    const answer = await turnFor(alice, { text: "C'est sur la boutique, le projet SHOP." });
+
+    const result = await addMessageToRequest(getAppDatabase(), answer, { reference });
+
+    expect(result).toMatchObject({ ok: true, value: { projectKey: "SHOP", status: "NEW" } });
+    const [updated] = await getDatabase().select().from(events).where(eq(events.type, "UPDATED"));
+    expect([updated?.actorType, updated?.data]).toEqual([
+      "SYSTEM",
+      { changes: { projectKey: { from: null, to: "SHOP" } } },
+    ]);
+  });
+
+  it("leaves the project empty when the answer does not name one", async () => {
+    const asked = await requestClarification(getAppDatabase(), await turnFor(alice), {
+      question: "Quel projet ?",
+    });
+    const reference = asked.ok ? asked.value.reference : "";
+
+    const result = await addMessageToRequest(getAppDatabase(), await turnFor(alice), { reference });
+
+    expect(result).toMatchObject({ ok: true, value: { projectKey: null } });
+  });
+
   it("keeps waiting when someone other than the requester adds a message", async () => {
     // Alice names the project, so Chloé, who also works on it, can reach the request.
     const turn = await turnFor(alice, { thread: "t", text: "Sur le SHOP, un détail manque." });
