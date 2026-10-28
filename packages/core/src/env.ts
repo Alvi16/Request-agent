@@ -17,6 +17,17 @@ const databaseEnvSchema = z.object({ DATABASE_URL: postgresUrl });
 const appDatabaseEnvSchema = z.object({ APP_DATABASE_URL: appDatabaseUrl });
 const testDatabaseEnvSchema = z.object({ TEST_DATABASE_URL: postgresUrl });
 
+// Below this confidence, a classified request waits for a human review. 0.8 was measured on the
+// evaluation messages: see docs/agent.md.
+const defaultReviewThreshold = 0.8;
+
+const classifierEnvSchema = z.object({
+  OLLAMA_BASE_URL: z.url(),
+  OLLAMA_MODEL: z.string().min(1),
+  CLASSIFICATION_REVIEW_THRESHOLD: z.coerce.number().min(0).max(1).default(defaultReviewThreshold),
+});
+
+export type ClassifierEnv = z.infer<typeof classifierEnvSchema>;
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type AppDatabaseEnv = z.infer<typeof appDatabaseEnvSchema>;
 export type TestDatabaseEnv = z.infer<typeof testDatabaseEnvSchema>;
@@ -39,4 +50,8 @@ export function loadAppDatabaseEnv(source: NodeJS.ProcessEnv = process.env): App
 
 export function loadTestDatabaseEnv(source: NodeJS.ProcessEnv = process.env): TestDatabaseEnv {
   return parseEnv(testDatabaseEnvSchema, source);
+}
+
+export function loadClassifierEnv(source: NodeJS.ProcessEnv = process.env): ClassifierEnv {
+  return parseEnv(classifierEnvSchema, source);
 }

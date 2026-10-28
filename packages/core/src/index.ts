@@ -5,10 +5,29 @@ export {
   type Transaction,
 } from "./db/client.ts";
 export * from "./db/schema.ts";
-export { loadDatabaseEnv, type DatabaseEnv } from "./env.ts";
+export {
+  classificationPromptVersion,
+  createOllamaClassifier,
+  type Classification,
+  type ClassificationInput,
+  type Classifier,
+} from "./classification/classifier.ts";
+export { requestPriorityDefinitions, requestTypeDefinitions } from "./classification/taxonomy.ts";
+export { loadClassifierEnv, loadDatabaseEnv, type ClassifierEnv, type DatabaseEnv } from "./env.ts";
+export {
+  classifyTurn,
+  conversationContext,
+  isNotARequest,
+  reviewReasons,
+  type ClassifiedTurn,
+  type ReviewReason,
+} from "./requests/classified-turn.ts";
 export {
   addMessageToRequest,
   createRequest,
+  fileUnhandledMessage,
+  maxClarifications,
+  requestClarification,
   updateRequest,
   type CreatedRequest,
 } from "./requests/commands.ts";
@@ -35,3 +54,4 @@ export {
   type TurnInput,
 } from "./requests/turn.ts";
 export type { RequestView, Result } from "./requests/views.ts";
+export { wrapUntrusted } from "./untrusted.ts";

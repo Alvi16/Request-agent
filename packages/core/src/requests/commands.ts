@@ -1,9 +1,20 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 
 import type { Database, Transaction } from "../db/client.ts";
 import { events, messages, projects, requests } from "../db/schema.ts";
 import { visibleRequests, worksOnProject } from "./access.ts";
-import type { CreateRequestInput, RequestReferenceInput, UpdateRequestInput } from "./inputs.ts";
+import {
+  type ClassifiedTurn,
+  isNotARequest,
+  type ReviewReason,
+  reviewReasons,
+} from "./classified-turn.ts";
+import type {
+  CreateRequestInput,
+  RequestClarificationInput,
+  RequestReferenceInput,
+  UpdateRequestInput,
+} from "./inputs.ts";
 import { parseReference } from "./reference.ts";
 import { assignableProjectIds, type Turn } from "./turn.ts";
 import {
@@ -58,73 +69,201 @@ async function lockVisibleRequest(tx: Transaction, turn: Turn, reference: string
   return request;
 }
 
+// Longest description stored, matching what the request operations accept.
+const descriptionLength = 10_000;
+
+// How many times the agent may ask the sender for details on one request. After that, a person
+// takes over, so the agent cannot keep a sender in a loop of questions.
+export const maxClarifications = 2;
+
 export interface CreatedRequest {
   request: RequestView;
   // False when the message had already been filed: the existing request is returned instead.
   created: boolean;
 }
 
+type TurnMessage = Awaited<ReturnType<typeof lockTurnMessage>>;
+type RequestStatus = (typeof requests.$inferSelect)["status"];
+
+// The project a new request is filed under: the one asked for, when the sender may use it, or the
+// one identified by the rules.
+async function resolveNewRequestProject(
+  tx: Transaction,
+  turn: ClassifiedTurn,
+  projectKey: string | undefined,
+): Promise<Result<string | null, "PROJECT_NOT_ALLOWED">> {
+  if (projectKey === undefined) {
+    return succeed(turn.project.status === "identified" ? turn.project.projectId : null);
+  }
+  const found = await findProjectId(tx, projectKey);
+  if (found === undefined || !assignableProjectIds(turn).includes(found)) {
+    return fail("PROJECT_NOT_ALLOWED");
+  }
+  return succeed(found);
+}
+
+// Files the message as a new request from its classification, with the history of the decision.
+async function insertRequest(
+  tx: Transaction,
+  turn: ClassifiedTurn,
+  message: TurnMessage,
+  projectId: string | null,
+  status: RequestStatus,
+  extraReasons: ReviewReason[] = [],
+): Promise<string> {
+  const { classification } = turn;
+  const reasons = [...reviewReasons(turn, projectId), ...extraReasons];
+  const [request] = await tx
+    .insert(requests)
+    .values({
+      projectId,
+      requesterContactId: turn.actor.kind === "contact" ? turn.actor.contactId : null,
+      type: classification.type,
+      status,
+      priority: classification.priority,
+      title: classification.title,
+      summary: classification.summary || null,
+      // The message itself describes the request best: rewriting it would cost time and could
+      // change its meaning, so the description keeps the sender's words.
+      description: turn.messageText.slice(0, descriptionLength),
+      sourceChannel: message.channel,
+      confidence: classification.confidence,
+      needsReview: reasons.length > 0 || status === "WAITING_FOR_INFO",
+    })
+    .returning({ id: requests.id });
+  if (request === undefined) {
+    throw new Error("The request was not inserted");
+  }
+  await tx.update(messages).set({ requestId: request.id }).where(eq(messages.id, message.id));
+
+  const origin = {
+    requestId: request.id,
+    actorType: "AGENT" as const,
+    channel: message.channel,
+    messageId: message.id,
+  };
+  await tx.insert(events).values([
+    { ...origin, type: "CREATED", data: { title: classification.title, status } },
+    {
+      ...origin,
+      type: "CLASSIFIED",
+      data: {
+        type: classification.type,
+        priority: classification.priority,
+        confidence: classification.confidence,
+        threshold: turn.reviewThreshold,
+        reviewReasons: reasons,
+        model: classification.model,
+        promptVersion: classification.promptVersion,
+      },
+    },
+  ]);
+  return request.id;
+}
+
 export function createRequest(
   db: Database,
-  turn: Turn,
+  turn: ClassifiedTurn,
   input: CreateRequestInput,
-): Promise<Result<CreatedRequest, "PROJECT_NOT_ALLOWED">> {
+): Promise<Result<CreatedRequest, "PROJECT_NOT_ALLOWED" | "PROJECT_AMBIGUOUS" | "NOT_A_REQUEST">> {
   return db.transaction(async (tx) => {
     const message = await lockTurnMessage(tx, turn);
     if (message.requestId !== null) {
       return succeed({ request: await loadView(tx, message.requestId), created: false });
     }
+    if (isNotARequest(turn)) {
+      return fail("NOT_A_REQUEST");
+    }
+    // A verified sender can say which project they mean: the agent must ask instead of guessing.
+    if (turn.actor.kind === "contact" && turn.project.status === "ambiguous") {
+      return fail("PROJECT_AMBIGUOUS");
+    }
+    const project = await resolveNewRequestProject(tx, turn, input.projectKey);
+    if (!project.ok) {
+      return project;
+    }
+    const requestId = await insertRequest(tx, turn, message, project.value, "NEW");
+    return succeed({ request: await loadView(tx, requestId), created: true });
+  });
+}
 
-    let projectId: string | null = null;
-    if (input.projectKey !== undefined) {
-      const found = await findProjectId(tx, input.projectKey);
-      if (found === undefined || !assignableProjectIds(turn).includes(found)) {
-        return fail("PROJECT_NOT_ALLOWED");
+// Files a message the agent left unhandled, for a person to look at, so that no message is lost.
+// Returns undefined when the message is already filed or clearly not a request.
+export function fileUnhandledMessage(
+  db: Database,
+  turn: ClassifiedTurn,
+): Promise<RequestView | undefined> {
+  return db.transaction(async (tx) => {
+    const message = await lockTurnMessage(tx, turn);
+    if (message.requestId !== null || isNotARequest(turn)) {
+      return undefined;
+    }
+    const project = turn.project.status === "identified" ? turn.project.projectId : null;
+    const requestId = await insertRequest(tx, turn, message, project, "NEW", ["UNHANDLED"]);
+    return loadView(tx, requestId);
+  });
+}
+
+async function setStatus(
+  tx: Transaction,
+  requestId: string,
+  from: RequestStatus,
+  to: RequestStatus,
+  message: TurnMessage,
+): Promise<void> {
+  await tx.update(requests).set({ status: to }).where(eq(requests.id, requestId));
+  // The status changes by a fixed rule of the system, never by a choice of the model.
+  await tx.insert(events).values({
+    requestId,
+    type: "STATUS_CHANGED",
+    actorType: "SYSTEM",
+    channel: message.channel,
+    messageId: message.id,
+    data: { from, to },
+  });
+}
+
+// Records that the agent asks the sender for details: on the request of the message, or on a new
+// request filed for it. The request waits for the answer, and for a person if no answer comes.
+export function requestClarification(
+  db: Database,
+  turn: ClassifiedTurn,
+  input: RequestClarificationInput,
+): Promise<Result<RequestView, "CLARIFICATION_LIMIT">> {
+  return db.transaction(async (tx) => {
+    const message = await lockTurnMessage(tx, turn);
+    let requestId = message.requestId;
+    if (requestId === null) {
+      const project = turn.project.status === "identified" ? turn.project.projectId : null;
+      requestId = await insertRequest(tx, turn, message, project, "WAITING_FOR_INFO");
+    } else {
+      const [asked] = await tx
+        .select({ value: count() })
+        .from(events)
+        .where(and(eq(events.requestId, requestId), eq(events.type, "CLARIFICATION_REQUESTED")));
+      if ((asked?.value ?? 0) >= maxClarifications) {
+        await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
+        return fail("CLARIFICATION_LIMIT");
       }
-      projectId = found;
+      const [request] = await tx
+        .select({ status: requests.status })
+        .from(requests)
+        .where(eq(requests.id, requestId))
+        .for("update");
+      if (request !== undefined && request.status !== "WAITING_FOR_INFO") {
+        await setStatus(tx, requestId, request.status, "WAITING_FOR_INFO", message);
+      }
+      await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
     }
-
-    // A request from an unverified sender, or without a project, always waits for a person.
-    const needsReview = turn.actor.kind === "anonymous" || projectId === null;
-    const [request] = await tx
-      .insert(requests)
-      .values({
-        projectId,
-        requesterContactId: turn.actor.kind === "contact" ? turn.actor.contactId : null,
-        type: input.type,
-        priority: input.priority ?? null,
-        title: input.title,
-        summary: input.summary ?? null,
-        description: input.description ?? null,
-        sourceChannel: message.channel,
-        confidence: input.confidence,
-        needsReview,
-      })
-      .returning({ id: requests.id });
-    if (request === undefined) {
-      throw new Error("The request was not inserted");
-    }
-    await tx.update(messages).set({ requestId: request.id }).where(eq(messages.id, message.id));
-
-    const origin = {
-      requestId: request.id,
-      actorType: "AGENT" as const,
+    await tx.insert(events).values({
+      requestId,
+      type: "CLARIFICATION_REQUESTED",
+      actorType: "AGENT",
       channel: message.channel,
       messageId: message.id,
-    };
-    await tx.insert(events).values([
-      {
-        ...origin,
-        type: "CREATED",
-        data: { title: input.title, projectKey: input.projectKey ?? null },
-      },
-      {
-        ...origin,
-        type: "CLASSIFIED",
-        data: { type: input.type, priority: input.priority ?? null, confidence: input.confidence },
-      },
-    ]);
-    return succeed({ request: await loadView(tx, request.id), created: true });
+      data: { question: input.question },
+    });
+    return succeed(await loadView(tx, requestId));
   });
 }
 
@@ -205,6 +344,12 @@ export function addMessageToRequest(
     await tx.update(messages).set({ requestId: request.id }).where(eq(messages.id, message.id));
     // Touching the request moves it up in the lists sorted by last activity.
     await tx.update(requests).set({ updatedAt: new Date() }).where(eq(requests.id, request.id));
+    // The answer of the requester to a clarification puts the request back in the queue.
+    const isRequester =
+      turn.actor.kind === "contact" && turn.actor.contactId === request.requesterContactId;
+    if (request.status === "WAITING_FOR_INFO" && isRequester) {
+      await setStatus(tx, request.id, "WAITING_FOR_INFO", "NEW", message);
+    }
     await tx.insert(events).values({
       requestId: request.id,
       type: "MESSAGE_ADDED",

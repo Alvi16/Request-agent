@@ -1,5 +1,8 @@
+import type { Classification } from "../src/classification/classifier.ts";
 import type { Database } from "../src/db/client.ts";
 import { conversations, messages } from "../src/db/schema.ts";
+import type { ClassifiedTurn } from "../src/requests/classified-turn.ts";
+import type { Turn } from "../src/requests/turn.ts";
 
 export const alice = "alice.martin@acme.example";
 export const bruno = "bruno.leroy@globex.example";
@@ -50,4 +53,29 @@ export async function storeMessage(db: Database, message: StoredMessage): Promis
     throw new Error("The message was not stored");
   }
   return stored.id;
+}
+
+export const testReviewThreshold = 0.8;
+
+// A turn classified without calling the model, as a confident bug report unless told otherwise.
+export function classified(
+  turn: Turn,
+  classification: Partial<Classification> = {},
+  messageText = "Les paiements échouent.",
+): ClassifiedTurn {
+  return {
+    ...turn,
+    messageText,
+    reviewThreshold: testReviewThreshold,
+    classification: {
+      type: "BUG",
+      priority: "HIGH",
+      title: "Paiement refusé",
+      summary: "Les paiements par carte échouent",
+      confidence: 0.9,
+      model: "test-model",
+      promptVersion: "test-prompt",
+      ...classification,
+    },
+  };
 }

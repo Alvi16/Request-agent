@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { loadAppDatabaseEnv, loadDatabaseEnv, loadTestDatabaseEnv } from "./env.ts";
+import {
+  loadAppDatabaseEnv,
+  loadClassifierEnv,
+  loadDatabaseEnv,
+  loadTestDatabaseEnv,
+} from "./env.ts";
 
 describe("loadDatabaseEnv", () => {
   it("returns the database URL when it is a PostgreSQL URL", () => {
@@ -41,5 +46,23 @@ describe("loadAppDatabaseEnv", () => {
   it("rejects a URL without a password", () => {
     const env = { APP_DATABASE_URL: "postgresql://request_agent_app@127.0.0.1:5433/request_agent" };
     expect(() => loadAppDatabaseEnv(env)).toThrow(/APP_DATABASE_URL/);
+  });
+});
+
+describe("loadClassifierEnv", () => {
+  const ollama = { OLLAMA_BASE_URL: "http://127.0.0.1:11434/api", OLLAMA_MODEL: "ornith:9b" };
+
+  it("uses the measured review threshold by default", () => {
+    expect(loadClassifierEnv(ollama).CLASSIFICATION_REVIEW_THRESHOLD).toBe(0.8);
+  });
+
+  it("reads a threshold between 0 and 1", () => {
+    expect(
+      loadClassifierEnv({ ...ollama, CLASSIFICATION_REVIEW_THRESHOLD: "0.9" })
+        .CLASSIFICATION_REVIEW_THRESHOLD,
+    ).toBe(0.9);
+    expect(() => loadClassifierEnv({ ...ollama, CLASSIFICATION_REVIEW_THRESHOLD: "80" })).toThrow(
+      /CLASSIFICATION_REVIEW_THRESHOLD/,
+    );
   });
 });
