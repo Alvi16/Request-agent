@@ -86,7 +86,12 @@ export async function classifyTurn(
 }
 
 export type ReviewReason =
-  "LOW_CONFIDENCE" | "PROJECT_AMBIGUOUS" | "PROJECT_UNKNOWN" | "UNVERIFIED_SENDER";
+  | "LOW_CONFIDENCE"
+  | "PROJECT_AMBIGUOUS"
+  | "PROJECT_UNKNOWN"
+  | "UNVERIFIED_SENDER"
+  // The agent ended without filing the message, so the system filed it.
+  | "UNHANDLED";
 
 // Why a new request must wait for a person, given the project it is filed under. An empty list
 // means the agent's decision can be trusted without review.

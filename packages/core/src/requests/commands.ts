@@ -3,7 +3,12 @@ import { and, count, eq } from "drizzle-orm";
 import type { Database, Transaction } from "../db/client.ts";
 import { events, messages, projects, requests } from "../db/schema.ts";
 import { visibleRequests, worksOnProject } from "./access.ts";
-import { type ClassifiedTurn, isNotARequest, reviewReasons } from "./classified-turn.ts";
+import {
+  type ClassifiedTurn,
+  isNotARequest,
+  type ReviewReason,
+  reviewReasons,
+} from "./classified-turn.ts";
 import type {
   CreateRequestInput,
   RequestClarificationInput,
@@ -104,9 +109,10 @@ async function insertRequest(
   message: TurnMessage,
   projectId: string | null,
   status: RequestStatus,
+  extraReasons: ReviewReason[] = [],
 ): Promise<string> {
   const { classification } = turn;
-  const reasons = reviewReasons(turn, projectId);
+  const reasons = [...reviewReasons(turn, projectId), ...extraReasons];
   const [request] = await tx
     .insert(requests)
     .values({
@@ -159,7 +165,7 @@ export function createRequest(
   db: Database,
   turn: ClassifiedTurn,
   input: CreateRequestInput,
-): Promise<Result<CreatedRequest, "PROJECT_NOT_ALLOWED" | "NOT_A_REQUEST">> {
+): Promise<Result<CreatedRequest, "PROJECT_NOT_ALLOWED" | "PROJECT_AMBIGUOUS" | "NOT_A_REQUEST">> {
   return db.transaction(async (tx) => {
     const message = await lockTurnMessage(tx, turn);
     if (message.requestId !== null) {
@@ -168,12 +174,33 @@ export function createRequest(
     if (isNotARequest(turn)) {
       return fail("NOT_A_REQUEST");
     }
+    // A verified sender can say which project they mean: the agent must ask instead of guessing.
+    if (turn.actor.kind === "contact" && turn.project.status === "ambiguous") {
+      return fail("PROJECT_AMBIGUOUS");
+    }
     const project = await resolveNewRequestProject(tx, turn, input.projectKey);
     if (!project.ok) {
       return project;
     }
     const requestId = await insertRequest(tx, turn, message, project.value, "NEW");
     return succeed({ request: await loadView(tx, requestId), created: true });
+  });
+}
+
+// Files a message the agent left unhandled, for a person to look at, so that no message is lost.
+// Returns undefined when the message is already filed or clearly not a request.
+export function fileUnhandledMessage(
+  db: Database,
+  turn: ClassifiedTurn,
+): Promise<RequestView | undefined> {
+  return db.transaction(async (tx) => {
+    const message = await lockTurnMessage(tx, turn);
+    if (message.requestId !== null || isNotARequest(turn)) {
+      return undefined;
+    }
+    const project = turn.project.status === "identified" ? turn.project.projectId : null;
+    const requestId = await insertRequest(tx, turn, message, project, "NEW", ["UNHANDLED"]);
+    return loadView(tx, requestId);
   });
 }
 

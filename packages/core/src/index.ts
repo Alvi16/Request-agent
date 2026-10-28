@@ -25,6 +25,7 @@ export {
 export {
   addMessageToRequest,
   createRequest,
+  fileUnhandledMessage,
   maxClarifications,
   requestClarification,
   updateRequest,

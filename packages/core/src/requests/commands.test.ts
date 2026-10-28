@@ -9,6 +9,7 @@ import type { Classification } from "../classification/classifier.ts";
 import {
   addMessageToRequest,
   createRequest,
+  fileUnhandledMessage,
   maxClarifications,
   requestClarification,
   updateRequest,
@@ -65,7 +66,9 @@ async function waitForBlockedQueries(expected: number): Promise<void> {
 }
 
 async function createdReference(sender: string, input: CreateRequestInput = {}) {
-  const result = await createRequest(getAppDatabase(), await turnFor(sender), input);
+  // The sender names the project, as a sender working on several projects would.
+  const text = input.projectKey === undefined ? undefined : `Sur ${input.projectKey}, ça échoue.`;
+  const result = await createRequest(getAppDatabase(), await turnFor(sender, { text }), input);
   if (!result.ok) {
     throw new Error(`The request was not created: ${result.error}`);
   }
@@ -214,12 +217,16 @@ describe("createRequest", () => {
     expect(await getDatabase().select().from(requests)).toHaveLength(0);
   });
 
-  it("sends a request without a project to human review", async () => {
-    const result = await createRequest(getAppDatabase(), await turnFor(alice), {});
+  it("refuses to guess the project of a sender working on several projects", async () => {
+    const turn = await turnFor(alice);
 
-    expect(result).toMatchObject({
-      ok: true,
-      value: { request: { projectKey: null, needsReview: true } },
+    expect(await createRequest(getAppDatabase(), turn, {})).toEqual({
+      ok: false,
+      error: "PROJECT_AMBIGUOUS",
+    });
+    expect(await createRequest(getAppDatabase(), turn, { projectKey: "SHOP" })).toEqual({
+      ok: false,
+      error: "PROJECT_AMBIGUOUS",
     });
   });
 
@@ -435,5 +442,32 @@ describe("requestClarification", () => {
       .from(events)
       .where(eq(events.type, "CLARIFICATION_REQUESTED"));
     expect(asked).toHaveLength(maxClarifications);
+  });
+});
+
+describe("fileUnhandledMessage", () => {
+  it("files a message the agent left unhandled, for a person to look at", async () => {
+    const turn = await turnFor(alice);
+
+    const request = await fileUnhandledMessage(getAppDatabase(), turn);
+
+    expect(request).toMatchObject({ projectKey: null, needsReview: true, status: "NEW" });
+    const [classifiedEvent] = await getDatabase()
+      .select()
+      .from(events)
+      .where(eq(events.type, "CLASSIFIED"));
+    expect(classifiedEvent?.data).toMatchObject({
+      reviewReasons: ["PROJECT_AMBIGUOUS", "UNHANDLED"],
+    });
+  });
+
+  it("does nothing when the agent filed the message, or when it is clearly not a request", async () => {
+    const filed = await turnFor(bruno);
+    await createRequest(getAppDatabase(), filed, {});
+    const thanks = await turnFor(bruno, { classification: { type: "OTHER", confidence: 0.95 } });
+
+    expect(await fileUnhandledMessage(getAppDatabase(), filed)).toBeUndefined();
+    expect(await fileUnhandledMessage(getAppDatabase(), thanks)).toBeUndefined();
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
   });
 });

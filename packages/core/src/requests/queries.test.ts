@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { alice, bruno, chloeSlackId, classified, storeMessage } from "../../test/fixtures.ts";
 import { useAppTestDatabase, useTestDatabase } from "../../test/database.ts";
 import { seedDatabase } from "../db/seed.ts";
-import { addMessageToRequest, createRequest, updateRequest } from "./commands.ts";
+import {
+  addMessageToRequest,
+  createRequest,
+  fileUnhandledMessage,
+  updateRequest,
+} from "./commands.ts";
 import type { Classification } from "../classification/classifier.ts";
 import { findRequest, getRequestStatus, listProjectRequests, searchRequests } from "./queries.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
@@ -17,12 +22,12 @@ beforeEach(async () => {
 
 async function turnFor(
   sender: string,
-  options: { channel?: "SLACK" | "EMAIL"; trust?: Trust; thread?: string } = {},
+  options: { channel?: "SLACK" | "EMAIL"; trust?: Trust; thread?: string; text?: string } = {},
 ) {
   const messageId = await storeMessage(getDatabase(), {
     channel: options.channel,
     sender,
-    bodyText: "Message",
+    bodyText: options.text ?? "Message",
     thread: options.thread,
   });
   return prepareTurn(getAppDatabase(), {
@@ -40,8 +45,11 @@ async function file(
 ): Promise<string> {
   const { projectKey, summary = "", ...classification } = input;
   // The message says what the title says, since the description keeps the message text.
+  // The sender names the project, as a sender working on several projects would.
+  const text =
+    projectKey === undefined ? classification.title : `${classification.title} (${projectKey})`;
   const turn = classified(
-    await turnFor(sender, { thread }),
+    await turnFor(sender, { thread, text }),
     { ...classification, summary },
     classification.title,
   );
@@ -50,6 +58,16 @@ async function file(
     throw new Error(`The request was not created: ${result.error}`);
   }
   return result.value.request.reference;
+}
+
+// A request without a project, as filed for review when the project of a sender is unclear.
+async function fileWithoutProject(sender: string, title: string, thread?: string): Promise<string> {
+  const turn = classified(await turnFor(sender, { thread, text: title }), { title }, title);
+  const request = await fileUnhandledMessage(getAppDatabase(), turn);
+  if (request === undefined) {
+    throw new Error("The request was not filed");
+  }
+  return request.reference;
 }
 
 const chloe = (options: { thread?: string } = {}) =>
@@ -85,7 +103,7 @@ describe("findRequest", () => {
 
   it("does not reveal the request of a conversation that the sender cannot reach", async () => {
     // Alice's request has no project, so only Alice reaches it, even in a shared thread.
-    await file(alice, { type: "SUPPORT", title: "Accès perdu" }, "thread-shared");
+    await fileWithoutProject(alice, "Accès perdu", "thread-shared");
 
     const result = await findRequest(
       getAppDatabase(),
@@ -118,7 +136,7 @@ describe("findRequest", () => {
 
   it("lets a contact reach the requests they made, even outside their projects", async () => {
     // Without a project, the request belongs to no project the contact works on.
-    const reference = await file(alice, { type: "SUPPORT", title: "Accès perdu" });
+    const reference = await fileWithoutProject(alice, "Accès perdu");
 
     expect((await findRequest(getAppDatabase(), await turnFor(alice), { reference })).ok).toBe(
       true,
