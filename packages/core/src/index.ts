@@ -12,6 +12,12 @@ export {
   type ClassificationInput,
   type Classifier,
 } from "./classification/classifier.ts";
+export {
+  createOllamaDuplicateJudge,
+  type DuplicateCandidate,
+  type DuplicateJudge,
+  type DuplicateJudgement,
+} from "./classification/duplicate-judge.ts";
 export { requestPriorityDefinitions, requestTypeDefinitions } from "./classification/taxonomy.ts";
 export {
   loadAppDatabaseEnv,
@@ -26,7 +32,9 @@ export {
   conversationContext,
   isNotARequest,
   reviewReasons,
+  unclassifiedTurn,
   type ClassifiedTurn,
+  type PossibleDuplicate,
   type ReviewReason,
 } from "./requests/classified-turn.ts";
 export {
@@ -70,3 +78,22 @@ export {
   type ChannelMessage,
   type StoredMessage,
 } from "./messages/inbox.ts";
+export {
+  listUnhandledMessages,
+  markHandled,
+  maxHandlingAttempts,
+  recordFailedAttempt,
+  type UnhandledMessage,
+} from "./messages/handling.ts";
+export { assessDuplicate, findDuplicateCandidates } from "./requests/duplicates.ts";
+export {
+  listReviewQueue,
+  markDuplicate,
+  markDuplicateInput,
+  reviewRequest,
+  reviewRequestInput,
+  type MarkDuplicateInput,
+  type ReviewItem,
+  type Reviewer,
+  type ReviewRequestInput,
+} from "./requests/review.ts";
