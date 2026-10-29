@@ -46,7 +46,10 @@ export function senderTrust(email: ParsedEmail, settings: TrustSettings): Trust 
   return fromOurServer && results.result === "pass" && aligned ? "VERIFIED" : "UNVERIFIED";
 }
 
-const automaticSenders = /^(mailer-daemon|postmaster|no-?reply|do-?not-?reply|bounces?)(\+.*)?@/i;
+// Robot addresses. The "no reply" ones are also recognized with a prefix, such as
+// billing-noreply@example.com, which many services use.
+const automaticSenders =
+  /^((mailer-daemon|postmaster|bounces?)|([^@]*[._-])?(no-?reply|do-?not-?reply))(\+[^@]*)?@/i;
 
 // Whether the email was sent by a program: an automatic reply, a mailing list or a bounce. The
 // agent neither handles nor answers it, which also prevents loops of automatic replies (RFC 3834).
