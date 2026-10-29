@@ -1,4 +1,6 @@
-import { ImapFlow } from "imapflow";
+import type { MailboxCursor } from "@request-agent/core";
+
+import { ImapFlow, type SearchObject } from "imapflow";
 import { createTransport } from "nodemailer";
 
 import type { Mailbox, MailSender } from "./adapter";
@@ -18,6 +20,35 @@ export interface MailLogger {
   error(message: string, error: unknown): void;
 }
 
+// Where the mailbox keeps how far it has read, so it goes on from there after a restart.
+export interface CursorStore {
+  load(): Promise<MailboxCursor | undefined>;
+  save(cursor: MailboxCursor): Promise<void>;
+}
+
+// The emails to hand over: those that arrived after the cursor, read or not, since a person may
+// have opened them in their mail client, and those still unread, such as an email that could not be
+// stored before. Without a valid cursor, as on the first start, only the unread ones.
+async function emailsToRead(
+  client: ImapFlow,
+  cursor: MailboxCursor | undefined,
+  uidValidity: number,
+): Promise<number[]> {
+  const found = async (query: SearchObject) => {
+    const uids = await client.search(query, { uid: true });
+    return Array.isArray(uids) ? uids : [];
+  };
+  const unseen = await found({ seen: false });
+  if (cursor === undefined || cursor.uidValidity !== uidValidity) {
+    return unseen;
+  }
+  // "n:*" also matches the last email when its UID is below n (RFC 9051), hence the filter.
+  const arrived = (await found({ uid: `${cursor.lastUid + 1}:*` })).filter(
+    (uid) => uid > cursor.lastUid,
+  );
+  return [...new Set([...unseen, ...arrived])].toSorted((a, b) => a - b);
+}
+
 // Waits between two connection attempts, so a mail server that is down is not flooded.
 const reconnectDelayMs = 10_000;
 
@@ -31,17 +62,22 @@ const autoIdleDelayMs = 1000;
 export function imapMailbox(
   settings: MailServerSettings,
   logger: MailLogger,
+  cursorStore: CursorStore,
 ): Mailbox & { close: () => Promise<void> } {
   let client: ImapFlow | undefined;
   let closed = false;
   return {
     watch: async (listener) => {
-      // Reads unread emails one after the other, whatever triggered the read.
+      // Reads the new emails one after the other, whatever triggered the read.
       let reading = Promise.resolve();
-      const readUnseen = (current: ImapFlow) => {
+      const readNew = (current: ImapFlow) => {
         const read = async () => {
-          const uids = await current.search({ seen: false }, { uid: true });
-          for (const uid of Array.isArray(uids) ? uids : []) {
+          if (current.mailbox === false) {
+            return;
+          }
+          const uidValidity = Number(current.mailbox.uidValidity);
+          const uids = await emailsToRead(current, await cursorStore.load(), uidValidity);
+          for (const uid of uids) {
             // oxlint-disable-next-line no-await-in-loop
             const message = await current.fetchOne(String(uid), { source: true }, { uid: true });
             if (message !== false && message.source !== undefined) {
@@ -49,6 +85,10 @@ export function imapMailbox(
               // oxlint-disable-next-line no-await-in-loop
               await listener({ uid, source: message.source });
             }
+            // Saved once the email is handed over: after a crash, it is read again, and the
+            // adapter recognizes it by its Message-ID.
+            // oxlint-disable-next-line no-await-in-loop
+            await cursorStore.save({ uidValidity, lastUid: uid });
           }
         };
         // A failed read does not stop the next ones: the emails stay unread and are read again.
@@ -69,7 +109,7 @@ export function imapMailbox(
           logger.error("IMAP connection error", error);
         });
         current.on("exists", () => {
-          readUnseen(current).catch((error: unknown) => {
+          readNew(current).catch((error: unknown) => {
             logger.error("New emails could not be read", error);
           });
         });
@@ -86,7 +126,7 @@ export function imapMailbox(
         await current.connect();
         await current.mailboxOpen("INBOX");
         client = current;
-        await readUnseen(current);
+        await readNew(current);
       };
       await connect();
     },
