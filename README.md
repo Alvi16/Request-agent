@@ -4,21 +4,22 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model, the agent tools, the classification, and the Slack and Email channels are in place. The P1 features come next: reliability, duplicates, human review and the web interface.
+The foundations, the data model, the agent tools, the classification, the Slack and Email channels, duplicate detection, the review queue and the recovery of unhandled messages are in place. The web interface comes next.
 
-| Feature                                                          | Priority | Status      |
-| ---------------------------------------------------------------- | -------- | ----------- |
-| Monorepo, TypeScript, lint, format and test tooling              | —        | Done        |
-| Mastra agent connected to a local Ollama model                   | P0       | Done        |
-| Local PostgreSQL database                                        | P0       | Done        |
-| Data model and structured storage with history and provenance    | P0       | Done        |
-| Typed tools (create, update, find, list, status, search)         | P0       | Done        |
-| Classification and uncertainty handling                          | P0       | Done        |
-| Slack integration                                                | P0       | Done        |
-| Email integration                                                | P0       | Done        |
-| Email conversations, duplicates, human validation, web interface | P1       | Not started |
-| Embeddable web widget                                            | P2       | Not planned |
-| Per-project knowledge base and RAG                               | P3       | Not planned |
+| Feature                                                       | Priority | Status      |
+| ------------------------------------------------------------- | -------- | ----------- |
+| Monorepo, TypeScript, lint, format and test tooling           | —        | Done        |
+| Mastra agent connected to a local Ollama model                | P0       | Done        |
+| Local PostgreSQL database                                     | P0       | Done        |
+| Data model and structured storage with history and provenance | P0       | Done        |
+| Typed tools (create, update, find, list, status, search)      | P0       | Done        |
+| Classification and uncertainty handling                       | P0       | Done        |
+| Slack integration                                             | P0       | Done        |
+| Email integration                                             | P0       | Done        |
+| Email conversations, duplicates, human validation             | P1       | Done        |
+| Web interface                                                 | P1       | Not started |
+| Embeddable web widget                                         | P2       | Not planned |
+| Per-project knowledge base and RAG                            | P3       | Not planned |
 
 ## Architecture at a glance
 
@@ -196,6 +197,7 @@ The JSON response contains the answer in the `text` field. This route reaches th
 | `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                           |
 | `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                             |
 | `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                       |
+| `pnpm eval:duplicates`     | Quality of the duplicate check on labeled messages and their candidates, with the real model. Needs Ollama and takes about 15 minutes on a CPU                                               |
 
 ## Project structure
 
@@ -207,6 +209,7 @@ Request-agent/
 │       └── src/
 │           ├── config.ts           Environment variables validation
 │           ├── channel-handler.ts  Database and agent shared by the channel adapters
+│           ├── reliable-handling.ts  Retries, and filing for a person after the last failure
 │           ├── email/
 │           │   ├── parse.ts        Reads an email: sender, thread, new text, attachments
 │           │   ├── policy.ts       Verified senders and automatic emails
@@ -234,10 +237,13 @@ Request-agent/
 │       │   ├── env.ts              Environment variables validation
 │       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
 │       │   ├── messages/
-│       │   │   └── inbox.ts        Stores channel messages once, with their conversation
+│       │   │   ├── inbox.ts        Stores channel messages once, with their conversation
+│       │   │   └── handling.ts     Which messages are handled, and the failed attempts
 │       │   ├── classification/
 │       │   │   ├── taxonomy.ts     Definitions of the request types and priorities
-│       │   │   └── classifier.ts   Classification call to Ollama, with its confidence
+│       │   │   ├── classifier.ts   Classification call to Ollama, with its confidence
+│       │   │   ├── duplicate-judge.ts  Asks the model which request repeats a message
+│       │   │   └── ollama.ts       Structured call to Ollama and token probabilities
 │       │   ├── db/
 │       │   │   ├── schema.ts       Data model
 │       │   │   ├── client.ts       Database connection
@@ -250,6 +256,8 @@ Request-agent/
 │       │       ├── access.ts       The access rule applied to every operation
 │       │       ├── inputs.ts       Validated inputs of the operations
 │       │       ├── commands.ts     Create, clarify, update, add a message
+│       │       ├── duplicates.ts   Candidates for a duplicate, and the check by the model
+│       │       ├── review.ts       Review queue: list, review, mark as duplicate
 │       │       └── queries.ts      Find, status, list, search, identify
 │       └── test/                   Test database setup and fixtures, shared with the server
 ├── docs/
@@ -271,7 +279,8 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- Slack messages and emails are handled one at a time, and the queue lives in memory: a message received while the server restarts stays stored, but is not handled again automatically.
+- Slack messages and emails are handled one at a time. A message left unhandled by a restart is handled again at the next start.
+- Duplicates are found among requests sharing words or spelling with the message: a rewording with no word in common, such as "CB" for "carte bancaire", is missed.
 - Attached files are described (name, type, size) but their content is not stored.
 - Answers are written in French only.
 - The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
