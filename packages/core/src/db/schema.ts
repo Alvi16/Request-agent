@@ -300,3 +300,35 @@ export const events = pgTable(
   },
   (t) => [index("events_request_id_created_at_idx").on(t.requestId, t.createdAt)],
 );
+
+// A member of the team who signs in to the web interface. The account belongs to a contact, so
+// the history names the person who reviewed or changed a request.
+export const staffAccounts = pgTable("staff_accounts", {
+  contactId: uuid("contact_id")
+    .primaryKey()
+    .references(() => contacts.id),
+  // Argon2id hash with its parameters and salt, never the password itself.
+  passwordHash: text("password_hash").notNull(),
+  // A disabled account can no longer sign in, and its sessions stop working.
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+// A signed-in session of the web interface. Only a hash of the cookie token is stored, so a copy
+// of the database does not let anyone sign in.
+export const staffSessions = pgTable(
+  "staff_sessions",
+  {
+    id: id(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => staffAccounts.contactId),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Set when the person signs out: the application role cannot delete rows.
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("staff_sessions_contact_id_idx").on(t.contactId)],
+);

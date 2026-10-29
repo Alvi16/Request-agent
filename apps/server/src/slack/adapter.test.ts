@@ -92,6 +92,7 @@ describe("startSlackAdapter", () => {
       ["INBOUND", "le panier se vide"],
       ["OUTBOUND", "Votre demande est enregistrée sous la référence REQ-0001."],
     ]);
+    expect(stored[1]?.inReplyTo).toBe(stored[0]?.externalId);
   });
 
   it("handles a mention once, although Slack also sends it as a channel message", async () => {

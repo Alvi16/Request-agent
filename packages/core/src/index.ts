@@ -97,3 +97,25 @@ export {
   type Reviewer,
   type ReviewRequestInput,
 } from "./requests/review.ts";
+export {
+  changeRequestStatus,
+  changeStatusInput,
+  consolePageSize,
+  getRequestRecord,
+  listProjects,
+  listRequests,
+  listRequestsInput,
+  type ChangeStatusInput,
+  type ConsoleRequest,
+  type ListRequestsInput,
+  type RequestRecord,
+} from "./requests/console.ts";
+export {
+  authenticateStaff,
+  minPasswordLength,
+  saveStaffAccount,
+  staffAccountInput,
+  type StaffAccountInput,
+  type StaffMember,
+} from "./staff/accounts.ts";
+export { closeSession, findSession, openSession, sessionDurationMs } from "./staff/sessions.ts";

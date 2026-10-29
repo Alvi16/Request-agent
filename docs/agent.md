@@ -57,7 +57,7 @@ The threshold is set with `CLASSIFICATION_REVIEW_THRESHOLD`, between 0 and 1. Th
 
 A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request, and the agent is not run, which saves its calls. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
 
-The team works through the review queue with three operations of the business core, used by the web interface: list the requests waiting for review, with their reasons; review a request, optionally correcting its type, priority, project or status; and mark a request as a duplicate of another one, which closes it and points it to the original. Each of them is recorded in the history as an action of a person (`REVIEWED`, `MARKED_DUPLICATE`, `STATUS_CHANGED`).
+The team works through the review queue in the web interface (`pnpm web`, see [decision 008](decisions/008-web-interface.md)), with three operations of the business core: list the requests waiting for review, with their reasons; review a request, optionally correcting its type, priority, project or status; and mark a request as a duplicate of another one, which closes it and points it to the original. Each of them is recorded in the history as an action of a person (`REVIEWED`, `MARKED_DUPLICATE`, `STATUS_CHANGED`).
 
 ## Duplicates
 

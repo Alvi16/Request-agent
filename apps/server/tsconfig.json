@@ -4,5 +4,5 @@
     // The business core is consumed as TypeScript source, and its imports end with .ts.
     "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*", "test/**/*", "*.config.ts"]
+  "include": ["src/**/*", "scripts/**/*", "test/**/*", "*.config.ts"]
 }
