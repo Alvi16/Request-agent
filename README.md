@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model, the agent tools, the classification, the Slack and Email channels, duplicate detection, the review queue and the recovery of unhandled messages are in place. The web interface comes next.
+The foundations, the data model, the agent tools, the classification, the Slack and Email channels, duplicate detection, the recovery of unhandled messages and the web interface of the team are in place. The final demonstration comes next.
 
 | Feature                                                       | Priority | Status      |
 | ------------------------------------------------------------- | -------- | ----------- |
@@ -17,7 +17,7 @@ The foundations, the data model, the agent tools, the classification, the Slack 
 | Slack integration                                             | P0       | Done        |
 | Email integration                                             | P0       | Done        |
 | Email conversations, duplicates, human validation             | P1       | Done        |
-| Web interface                                                 | P1       | Not started |
+| Web interface to consult and review requests                  | P1       | Done        |
 | Embeddable web widget                                         | P2       | Not planned |
 | Per-project knowledge base and RAG                            | P3       | Not planned |
 
@@ -33,10 +33,11 @@ flowchart LR
     Agent --> Ollama["Ollama<br/>local model"]
     Agent --> Tools["Request tools<br/>built for each message"]
     Tools --> Core["Business core<br/>packages/core"]
+    Web["Web interface<br/>apps/web"] --> Core
     Core --> Postgres[("PostgreSQL<br/>Docker")]
 ```
 
-The business core holds the data model and the request operations, with no dependency on any channel. Slack and Email will be input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md).
+The business core holds the data model and the request operations, with no dependency on any channel. Slack and Email are input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md). The web interface is a separate process that uses the business core directly, without the agent: the team signs in to consult every request and to validate the decisions of the agent.
 
 Each message is first classified by a separate call to the model, which gives its type, priority, title and summary, with a confidence read from the model's token probabilities. A request waits for a human review when this confidence is low, when its project is unclear or when its sender is unverified. How a message is handled, the types and the measured quality are described in [`docs/agent.md`](docs/agent.md).
 
@@ -104,6 +105,8 @@ cp .env.example .env
 | `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender | `mx.google.com`                                                             |
 | `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine      | `true`                                                                      |
 | `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server. The tests empty it                                                  | `agent-test`, `change-me-mail-test`                                         |
+| `WEB_HOST`, `WEB_PORT`                                                     | Optional. Address and port of the web interface. Open it to the network only behind HTTPS                           | `127.0.0.1`, `4112` (default)                                               |
+| `WEB_TIME_ZONE`                                                            | Optional. Time zone of the dates shown in the web interface, as an IANA name                                        | `Europe/Paris` (default)                                                    |
 
 Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
@@ -149,6 +152,26 @@ pnpm build
 pnpm start
 ```
 
+## Web interface
+
+The team consults the requests and validates the decisions of the agent in a web interface, started separately from the agent server. It needs the database only.
+
+1. Create an account for each member of the team. The command asks for the password twice, without showing it, and requires at least 15 characters. Running it again for the same email sets a new password:
+
+   ```bash
+   pnpm staff:add --email dana.support@team.example --name "Dana Support"
+   ```
+
+2. Start the interface:
+
+   ```bash
+   pnpm web
+   ```
+
+3. Open `http://127.0.0.1:4112` in Chrome or Firefox and sign in. Safari refuses the session cookie over plain HTTP, even on this machine.
+
+The interface lists the requests with a search and filters, shows the review queue with the reasons of each review, and shows each request with its messages, the answers of the agent and its full history. A request can be validated with corrections, changed to another status or marked as a duplicate: the history records the person who did it. The choices and protections of the interface are described in [decision 008](docs/decisions/008-web-interface.md).
+
 ## Connecting Slack
 
 The agent connects to Slack in Socket Mode: the server opens the connection, so no public address or tunnel is needed. Use a test workspace, never a company workspace with real data.
@@ -190,20 +213,27 @@ The JSON response contains the answer in the `text` field. This route reaches th
 
 ## Tests and code quality
 
-| Command                    | What it checks                                                                                                                                                                               |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm test`                | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database and the local mail server (`pnpm db:up`) and use the separate test database, created automatically |
-| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                                             |
-| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                           |
-| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                             |
-| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                       |
-| `pnpm eval:duplicates`     | Quality of the duplicate check on labeled messages and their candidates, with the real model. Needs Ollama and takes about 15 minutes on a CPU                                               |
+| Command                    | What it checks                                                                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm test`                | Tests (Vitest) of every package, one package after the other. The model is simulated, Ollama is not needed. The tests need the database and the local mail server (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                                                                                           |
+| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                                                                         |
+| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                                                                           |
+| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                                                                     |
+| `pnpm eval:duplicates`     | Quality of the duplicate check on labeled messages and their candidates, with the real model. Needs Ollama and takes about 15 minutes on a CPU                                                                                             |
 
 ## Project structure
 
 ```
 Request-agent/
 ├── apps/
+│   ├── web/                        Web interface of the team
+│   │   └── src/
+│   │       ├── main.ts             Starts the interface
+│   │       ├── config.ts           Environment variables validation
+│   │       ├── app.ts              Pages, actions, sign-in and protections
+│   │       ├── sign-in-limiter.ts  Refuses sign-in for a while after repeated failures
+│   │       └── views/              Pages, rendered on the server, and their labels in French
 │   └── server/                     Mastra server
 │       ├── slack-app-manifest.yaml Settings of the Slack app
 │       └── src/
@@ -232,7 +262,7 @@ Request-agent/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
 │       ├── eval/                   Labeled messages to measure the classifier
-│       ├── scripts/                Migration, demo data and evaluation commands
+│       ├── scripts/                Migration, demo data, team accounts and evaluation commands
 │       ├── src/
 │       │   ├── env.ts              Environment variables validation
 │       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
@@ -244,6 +274,10 @@ Request-agent/
 │       │   │   ├── classifier.ts   Classification call to Ollama, with its confidence
 │       │   │   ├── duplicate-judge.ts  Asks the model which request repeats a message
 │       │   │   └── ollama.ts       Structured call to Ollama and token probabilities
+│       │   ├── staff/
+│       │   │   ├── password.ts     Argon2id password hashes
+│       │   │   ├── accounts.ts     Accounts of the team and sign-in
+│       │   │   └── sessions.ts     Sessions of the web interface
 │       │   ├── db/
 │       │   │   ├── schema.ts       Data model
 │       │   │   ├── client.ts       Database connection
@@ -258,8 +292,9 @@ Request-agent/
 │       │       ├── commands.ts     Create, clarify, update, add a message
 │       │       ├── duplicates.ts   Candidates for a duplicate, and the check by the model
 │       │       ├── review.ts       Review queue: list, review, mark as duplicate
+│       │       ├── console.ts      What the web interface reads, and status changes
 │       │       └── queries.ts      Find, status, list, search, identify
-│       └── test/                   Test database setup and fixtures, shared with the server
+│       └── test/                   Test database setup and fixtures, shared with the apps
 ├── docs/
 │   ├── agent.md                    How a message is handled, types, review, measured quality
 │   ├── data-model.md               Tables and their columns
@@ -283,6 +318,7 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 - Duplicates are found among requests sharing words or spelling with the message: a rewording with no word in common, such as "CB" for "carte bancaire", is missed.
 - Attached files are described (name, type, size) but their content is not stored.
 - Answers are written in French only.
-- The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
+- The Mastra server API has no authentication. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere. The web interface of the team has its own accounts.
+- The web interface refuses sign-in for 15 minutes after 5 failures for an email. This count is kept in memory: a restart clears it.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The local model is slow on a CPU: classifying a message takes from 20 s to 60 s, and the agent adds its own calls. Its classification is measured on 80 fictitious messages only, described in [`docs/agent.md`](docs/agent.md).
