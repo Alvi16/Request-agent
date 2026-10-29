@@ -67,6 +67,7 @@ export function classified(
     ...turn,
     messageText,
     reviewThreshold: testReviewThreshold,
+    duplicate: null,
     classification: {
       type: "BUG",
       priority: "HIGH",
