@@ -19,7 +19,7 @@
     "db:seed": "pnpm --filter @request-agent/core db:seed",
     "staff:add": "pnpm --filter @request-agent/core staff:add",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --workspace-concurrency=1 test",
     "eval:classification": "pnpm --filter @request-agent/core eval:classification",
     "eval:duplicates": "pnpm --filter @request-agent/core eval:duplicates",
     "lint": "oxlint",
