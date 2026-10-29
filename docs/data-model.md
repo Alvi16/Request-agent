@@ -18,6 +18,8 @@ erDiagram
     messages ||--o{ attachments : carries
     requests ||--o{ events : "history of"
     requests |o--o{ requests : "duplicate of"
+    contacts ||--o| staff_accounts : "signs in with"
+    staff_accounts ||--o{ staff_sessions : opens
 ```
 
 A message arrives in a conversation (a Slack thread or an email thread). The agent links it to a request: a new one, or an existing one when the message is a follow-up. Each action on a request adds an event to its history.
@@ -91,7 +93,7 @@ A message received or sent, on any channel.
 | `subject`           | Email subject                                                                                                       |
 | `body_text`         | Text of the message                                                                                                 |
 | `raw`               | Original payload received from the channel, to always be able to go back to the source                              |
-| `in_reply_to`       | Message-ID of the email it answers                                                                                  |
+| `in_reply_to`       | External ID of the message it answers: the email Message-ID, or the Slack message an answer of the agent replies to |
 | `sent_at`           | When the author sent it                                                                                             |
 | `received_at`       | When the system received it                                                                                         |
 | `handled_at`        | When the system finished with an inbound message. Empty while it waits to be handled, so a restart handles it again |
@@ -139,6 +141,31 @@ The history of each request.
 | `data`             | Details: changed values, classification, confidence, reason                                                                                            |
 
 Events can only be added. A database trigger rejects any update or deletion, so the history cannot be rewritten.
+
+### `staff_accounts`
+
+The account of a member of the team on the web interface. It belongs to a contact, so the history names the person who reviewed or changed a request.
+
+| Column          | Description                                                       |
+| --------------- | ----------------------------------------------------------------- |
+| `contact_id`    | The contact of the person. One account per contact                |
+| `password_hash` | Argon2id hash of the password, with its parameters and salt       |
+| `disabled_at`   | When the account was disabled. It can then no longer be signed in |
+
+Accounts are created or given a new password with `pnpm staff:add`, which enables the account again.
+
+### `staff_sessions`
+
+A signed-in session of the web interface.
+
+| Column       | Description                                                             |
+| ------------ | ----------------------------------------------------------------------- |
+| `contact_id` | The account of the session                                              |
+| `token_hash` | SHA-256 hash of the token kept in the cookie. The token is never stored |
+| `expires_at` | End of the session, 8 hours after it was opened                         |
+| `revoked_at` | When the person signed out                                              |
+
+Rows are never deleted, since the application role cannot delete: a session that signed out is marked as revoked.
 
 ## Conventions
 
