@@ -19,6 +19,7 @@
     "db:migrate": "pnpm --filter @request-agent/core db:migrate",
     "db:seed": "pnpm --filter @request-agent/core db:seed",
     "staff:add": "pnpm --filter @request-agent/core staff:add",
+    "contact:add": "pnpm --filter @request-agent/core contact:add",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "eval:classification": "pnpm --filter @request-agent/core eval:classification",
