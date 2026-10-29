@@ -18,7 +18,7 @@ export async function startSlackIfConfigured(
   }
   const { db, handle } = handler();
   const slack = await connectSlack(tokens);
-  startSlackAdapter({
+  await startSlackAdapter({
     events: slack.events,
     web: slack.web,
     db,

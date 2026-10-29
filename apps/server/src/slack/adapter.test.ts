@@ -1,9 +1,9 @@
-import { messages, type TurnInput } from "@request-agent/core";
+import { messages, requests, storeInboundMessage, type TurnInput } from "@request-agent/core";
 import { useAppTestDatabase, useTestDatabase } from "@request-agent/core/testing";
 import { describe, expect, it } from "vitest";
 
 import type { HandledMessage } from "../mastra/agents/handle-message";
-import { type SlackEventSource, startSlackAdapter, unavailableReply } from "./adapter";
+import { type SlackEventSource, startSlackAdapter } from "./adapter";
 
 const getDatabase = useTestDatabase();
 const getAppDatabase = useAppTestDatabase();
@@ -14,13 +14,13 @@ const teamId = "T1";
 type Listener = Parameters<SlackEventSource["on"]>[1];
 
 // A Slack that delivers the events the test sends, and records what the adapter posts.
-function fakeSlack(handle: (input: TurnInput) => Promise<HandledMessage>) {
+async function fakeSlack(handle: (input: TurnInput) => Promise<HandledMessage>) {
   const listeners = new Map<string, Listener>();
   const posted: { channel: string; threadTs: string; text: string }[] = [];
   const reactions: string[] = [];
   const handled: TurnInput[] = [];
   let next = 0;
-  const adapter = startSlackAdapter({
+  const adapter = await startSlackAdapter({
     events: { on: (type, listener) => listeners.set(type, listener) },
     web: {
       postInThread: (message) => {
@@ -41,6 +41,8 @@ function fakeSlack(handle: (input: TurnInput) => Promise<HandledMessage>) {
     botUserId,
     teamId,
     logger: { info: () => {}, error: () => {} },
+    // Retries come at once, so the tests do not wait.
+    retryDelaysMs: [1, 1],
   });
 
   async function deliver(type: "app_mention" | "message", event: Record<string, unknown>) {
@@ -60,14 +62,16 @@ function fakeSlack(handle: (input: TurnInput) => Promise<HandledMessage>) {
     return acked;
   }
 
-  return { deliver, posted, reactions, handled };
+  return { deliver, posted, reactions, handled, idle: adapter.idle };
 }
 
 const answered = (reply: string | null) => () => Promise.resolve({ reply, filedBySystem: false });
 
 describe("startSlackAdapter", () => {
   it("stores a mention, handles it, and answers in its thread", async () => {
-    const slack = fakeSlack(answered("Votre demande est enregistrée sous la référence REQ-0001."));
+    const slack = await fakeSlack(
+      answered("Votre demande est enregistrée sous la référence REQ-0001."),
+    );
 
     const acked = await slack.deliver("app_mention", { text: "<@UBOT> le panier se vide" });
 
@@ -91,7 +95,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("handles a mention once, although Slack also sends it as a channel message", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     await slack.deliver("app_mention", { text: "<@UBOT> le panier se vide" });
     await slack.deliver("message", { text: "<@UBOT> le panier se vide", channel_type: "channel" });
@@ -100,7 +104,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("handles a direct message", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     await slack.deliver("message", {
       channel: "D1",
@@ -112,7 +116,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("ignores channel messages outside the threads it follows, without storing them", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     const acked = await slack.deliver("message", { channel_type: "channel", text: "pause café ?" });
 
@@ -122,7 +126,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("handles a reply in a thread it follows, without a mention", async () => {
-    const slack = fakeSlack(answered("Quel projet ?"));
+    const slack = await fakeSlack(answered("Quel projet ?"));
     await slack.deliver("app_mention", { text: "<@UBOT> le bouton ne marche plus" });
 
     await slack.deliver("message", {
@@ -137,7 +141,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("handles a reply in a thread it follows in a private channel", async () => {
-    const slack = fakeSlack(answered("Quel projet ?"));
+    const slack = await fakeSlack(answered("Quel projet ?"));
     await slack.deliver("app_mention", { channel: "G1", text: "<@UBOT> le bouton ne marche plus" });
 
     await slack.deliver("message", {
@@ -152,7 +156,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("ignores bots, itself, edits and empty mentions", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     await slack.deliver("message", { channel_type: "im", bot_id: "B1", text: "bot" });
     await slack.deliver("message", { channel_type: "im", user: botUserId, text: "moi" });
@@ -167,7 +171,7 @@ describe("startSlackAdapter", () => {
   });
 
   it("treats a sender of another organization as unverified", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     await slack.deliver("app_mention", { text: "<@UBOT> bonjour", user_team: "T-OTHER" });
 
@@ -175,23 +179,52 @@ describe("startSlackAdapter", () => {
   });
 
   it("posts nothing when no answer is needed, such as for thanks", async () => {
-    const slack = fakeSlack(answered(null));
+    const slack = await fakeSlack(answered(null));
 
     await slack.deliver("app_mention", { text: "<@UBOT> merci !" });
 
     expect(slack.posted).toHaveLength(0);
   });
 
-  it("tells the sender when the message could not be handled", async () => {
-    const slack = fakeSlack(() => Promise.reject(new Error("Ollama is down")));
+  it("retries a failing message, then files it for a person and gives its reference", async () => {
+    const slack = await fakeSlack(() => Promise.reject(new Error("Ollama is down")));
 
     await slack.deliver("app_mention", { text: "<@UBOT> le panier se vide" });
 
-    expect(slack.posted.map((message) => message.text)).toEqual([unavailableReply]);
+    expect(slack.handled).toHaveLength(3);
+    expect(slack.posted.map((message) => message.text)).toEqual([
+      "Votre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
+    ]);
+    const [request] = await getDatabase().select().from(requests);
+    expect(request).toMatchObject({ type: "OTHER", needsReview: true });
+  });
+
+  it("handles at startup the messages stored before a restart but never handled", async () => {
+    await storeInboundMessage(getAppDatabase(), {
+      channel: "SLACK",
+      conversationExternalId: "C1:1793000000.000100",
+      externalId: "C1:1793000000.000100",
+      sender: "UALICE",
+      bodyText: "le panier se vide",
+      raw: {
+        type: "app_mention",
+        channel: "C1",
+        ts: "1793000000.000100",
+        user: "UALICE",
+        text: "<@UBOT> le panier se vide",
+      },
+      sentAt: new Date(),
+    });
+
+    const slack = await fakeSlack(answered("ok"));
+    await slack.idle();
+
+    expect(slack.handled).toHaveLength(1);
+    expect(slack.posted.map((message) => message.threadTs)).toEqual(["1793000000.000100"]);
   });
 
   it("does not acknowledge an event it could not store, so Slack delivers it again", async () => {
-    const slack = fakeSlack(answered("ok"));
+    const slack = await fakeSlack(answered("ok"));
 
     const acked = await slack.deliver("app_mention", { text: "<@UBOT> texte", ts: "not-a-number" });
 
