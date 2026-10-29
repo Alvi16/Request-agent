@@ -84,6 +84,8 @@ export async function startSlackAdapter(
       bodyText: text,
       raw: { ts: posted.ts },
       sentAt: sentAt(posted.ts),
+      // Ties the answer to the message it answers, and so to the request of that message.
+      inReplyTo: messageId(message.channel, message.ts),
     });
   }
 

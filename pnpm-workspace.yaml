@@ -12,6 +12,7 @@ allowBuilds:
   esbuild: true
 
 catalog:
+  "@hono/node-server": 2.1.5
   "@mastra/core": 1.79.0
   "@slack/socket-mode": 3.1.0
   "@slack/web-api": 8.2.0
@@ -20,6 +21,7 @@ catalog:
   drizzle-kit: 0.31.11
   drizzle-orm: 0.45.4
   email-reply-parser: 2.3.9
+  hono: 4.13.14
   imapflow: 2.9.1
   mastra: 1.35.0
   nodemailer: 10.2.1

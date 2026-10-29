@@ -77,20 +77,25 @@ export async function listReviewQueue(db: Database, limit = 50): Promise<ReviewI
     .orderBy(asc(requests.createdAt))
     .limit(limit);
   return Promise.all(
-    rows.map(async (row) => {
-      const [classified] = await db
-        .select({ data: events.data })
-        .from(events)
-        .where(and(eq(events.requestId, row.id), eq(events.type, "CLASSIFIED")))
-        .orderBy(desc(events.createdAt))
-        .limit(1);
-      const reasons = z
-        .object({ reviewReasons: z.array(z.string()).default([]) })
-        .catch({ reviewReasons: [] })
-        .parse(classified?.data ?? {}).reviewReasons;
-      return { request: toRequestView(row), reasons };
-    }),
+    rows.map(async (row) => ({
+      request: toRequestView(row),
+      reasons: await reviewReasonsOf(db, row.id),
+    })),
   );
+}
+
+// Why the request was sent to a person, as recorded by its latest classification.
+export async function reviewReasonsOf(db: Database, requestId: string): Promise<string[]> {
+  const [classified] = await db
+    .select({ data: events.data })
+    .from(events)
+    .where(and(eq(events.requestId, requestId), eq(events.type, "CLASSIFIED")))
+    .orderBy(desc(events.createdAt))
+    .limit(1);
+  return z
+    .object({ reviewReasons: z.array(z.string()).default([]) })
+    .catch({ reviewReasons: [] })
+    .parse(classified?.data ?? {}).reviewReasons;
 }
 
 // A person checked the request: it leaves the queue, with the corrections they made, recorded in
