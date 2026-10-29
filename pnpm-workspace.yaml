@@ -34,3 +34,8 @@ catalog:
   typescript: 7.0.2
   vitest: 4.1.12
   zod: 4.6.7
+
+overrides:
+  # drizzle-kit declares @esbuild-kit/esm-loader but never loads it. Its esbuild 0.18 is flagged by
+  # GHSA-67mh-4wv8-2f99, so it gets the version drizzle-kit itself runs.
+  "@esbuild-kit/core-utils>esbuild": 0.25.12
