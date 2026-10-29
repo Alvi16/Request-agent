@@ -8,6 +8,7 @@
     "dev": "mastra dev --env ../../.env",
     "build": "mastra build",
     "start": "mastra start --env ../../.env",
+    "demo:email": "node --env-file-if-exists=../../.env scripts/demo-email.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
