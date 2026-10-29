@@ -63,6 +63,7 @@ export {
 export type { RequestView, Result } from "./requests/views.ts";
 export { wrapUntrusted } from "./untrusted.ts";
 export {
+  conversationOfMessage,
   isKnownConversation,
   storeInboundMessage,
   storeOutboundMessage,

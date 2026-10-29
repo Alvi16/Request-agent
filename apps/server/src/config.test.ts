@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { loadEnv, loadSlackTokens } from "./config";
+import { loadEmailEnv, loadEnv, loadSlackTokens } from "./config";
 
 const validEnv = {
   OLLAMA_BASE_URL: "http://127.0.0.1:11434/api",
@@ -39,5 +39,49 @@ describe("loadSlackTokens", () => {
 
   it("rejects a token of the wrong kind, such as a user token", () => {
     expect(() => loadSlackTokens({ ...tokens, SLACK_BOT_TOKEN: "xoxp-1" })).toThrow(/xoxb-/);
+  });
+});
+
+describe("loadEmailEnv", () => {
+  const local = {
+    EMAIL_USER: "agent",
+    EMAIL_PASSWORD: "secret",
+    EMAIL_ADDRESS: "agent@requests.example",
+    EMAIL_IMAP_HOST: "127.0.0.1",
+    EMAIL_IMAP_PORT: "3143",
+    EMAIL_SMTP_HOST: "127.0.0.1",
+    EMAIL_SMTP_PORT: "3025",
+    EMAIL_SECURE: "false",
+  };
+
+  it("is undefined when no mailbox is configured", () => {
+    expect(loadEmailEnv({})).toBeUndefined();
+  });
+
+  it("reads the mailbox settings, with TLS and no sender trust by default", () => {
+    const { EMAIL_SECURE: _secure, ...withoutSecure } = local;
+
+    expect(loadEmailEnv(withoutSecure)).toMatchObject({
+      EMAIL_IMAP_PORT: 3143,
+      EMAIL_SECURE: true,
+      EMAIL_TRUST_LOCAL_SENDERS: false,
+    });
+  });
+
+  it("trusts every sender only for a mailbox on this machine", () => {
+    expect(
+      loadEmailEnv({ ...local, EMAIL_TRUST_LOCAL_SENDERS: "true" })?.EMAIL_TRUST_LOCAL_SENDERS,
+    ).toBe(true);
+    expect(() =>
+      loadEmailEnv({
+        ...local,
+        EMAIL_IMAP_HOST: "imap.gmail.com",
+        EMAIL_TRUST_LOCAL_SENDERS: "true",
+      }),
+    ).toThrow(/only allowed with a mailbox on this machine/);
+  });
+
+  it("rejects an invalid address", () => {
+    expect(() => loadEmailEnv({ ...local, EMAIL_ADDRESS: "agent" })).toThrow(/EMAIL_ADDRESS/);
   });
 });

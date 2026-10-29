@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.ts";
-import { conversations, messages } from "../db/schema.ts";
+import { attachments, conversations, messages } from "../db/schema.ts";
 
 type Channel = (typeof messages.$inferSelect)["channel"];
 
@@ -19,6 +19,8 @@ export interface ChannelMessage {
   raw: unknown;
   sentAt: Date;
   inReplyTo?: string | null;
+  // Files attached to the message. Only their description is stored for now.
+  attachments?: { filename: string; contentType: string; sizeBytes: number }[];
 }
 
 export interface StoredMessage {
@@ -66,6 +68,17 @@ async function storeMessage(
       .onConflictDoNothing({ target: [messages.channel, messages.externalId] })
       .returning({ id: messages.id });
     if (inserted !== undefined) {
+      const files = message.attachments ?? [];
+      if (files.length > 0) {
+        await tx.insert(attachments).values(
+          files.map((file) => ({
+            messageId: inserted.id,
+            filename: file.filename,
+            contentType: file.contentType,
+            sizeBytes: file.sizeBytes,
+          })),
+        );
+      }
       return { messageId: inserted.id, isNew: true };
     }
     const [existing] = await tx
@@ -108,4 +121,19 @@ export async function isKnownConversation(
       and(eq(conversations.channel, channel), eq(conversations.externalId, conversationExternalId)),
     );
   return conversation !== undefined;
+}
+
+// The conversation a message belongs to, found by the message's ID on its channel. A reply names
+// the message it answers, and this gives the thread to attach it to.
+export async function conversationOfMessage(
+  db: Database,
+  channel: Channel,
+  messageExternalId: string,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ externalId: conversations.externalId })
+    .from(messages)
+    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+    .where(and(eq(messages.channel, channel), eq(messages.externalId, messageExternalId)));
+  return row?.externalId;
 }

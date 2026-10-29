@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { useAppTestDatabase, useTestDatabase } from "../../test/database.ts";
-import { conversations, messages } from "../db/schema.ts";
+import { attachments, conversations, messages } from "../db/schema.ts";
 import {
   type ChannelMessage,
+  conversationOfMessage,
   isKnownConversation,
   storeInboundMessage,
   storeOutboundMessage,
@@ -73,5 +74,33 @@ describe("isKnownConversation", () => {
     expect(
       await isKnownConversation(getAppDatabase(), "EMAIL", slackMessage.conversationExternalId),
     ).toBe(false);
+  });
+});
+
+describe("attachments", () => {
+  it("stores the description of the attached files, once", async () => {
+    const withFile = {
+      ...slackMessage,
+      attachments: [{ filename: "capture.png", contentType: "image/png", sizeBytes: 2048 }],
+    };
+
+    await storeInboundMessage(getAppDatabase(), withFile);
+    await storeInboundMessage(getAppDatabase(), withFile);
+
+    const stored = await getDatabase().select().from(attachments);
+    expect(stored.map((file) => [file.filename, file.contentType, file.sizeBytes])).toEqual([
+      ["capture.png", "image/png", 2048],
+    ]);
+  });
+});
+
+describe("conversationOfMessage", () => {
+  it("finds the conversation of a message by its ID", async () => {
+    await storeInboundMessage(getAppDatabase(), slackMessage);
+
+    expect(await conversationOfMessage(getAppDatabase(), "SLACK", slackMessage.externalId)).toBe(
+      slackMessage.conversationExternalId,
+    );
+    expect(await conversationOfMessage(getAppDatabase(), "SLACK", "unknown")).toBeUndefined();
   });
 });

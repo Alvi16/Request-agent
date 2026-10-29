@@ -16,7 +16,11 @@
     "@request-agent/core": "workspace:*",
     "@slack/socket-mode": "catalog:",
     "@slack/web-api": "catalog:",
+    "email-reply-parser": "catalog:",
+    "imapflow": "catalog:",
+    "nodemailer": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
+    "postal-mime": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
