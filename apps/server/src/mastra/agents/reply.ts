@@ -21,6 +21,11 @@ const statusLabels: Record<RequestView["status"], string> = {
 // How many requests a list answer shows, so a reply stays readable.
 const listedRequestCount = 10;
 
+// Answer for a message the system filed for a person, after the agent could not handle it.
+export function filedForReviewReply(reference: string): string {
+  return `Votre message est enregistré sous la référence ${reference}. Une personne de l'équipe va le traiter.`;
+}
+
 function filed(request: RequestView): string {
   const review = request.needsReview ? " Une personne de l'équipe va la vérifier." : "";
   return `Votre demande est enregistrée sous la référence ${request.reference}.${review}`;
@@ -50,7 +55,10 @@ function describeOutcome(outcome: ToolOutcome): string | undefined {
       break;
     }
     case "create_request": {
-      answer = filed(outcome.result.value.request);
+      const { request, duplicate } = outcome.result.value;
+      answer = duplicate
+        ? `Votre message concerne la demande existante ${request.reference} : il y a été ajouté.`
+        : filed(request);
       break;
     }
     case "add_message_to_request": {
@@ -87,7 +95,7 @@ export function composeReply(
   filedBySystem: RequestView | undefined,
 ): string {
   if (filedBySystem !== undefined) {
-    return `Votre message est enregistré sous la référence ${filedBySystem.reference}. Une personne de l'équipe va le traiter.`;
+    return filedForReviewReply(filedBySystem.reference);
   }
   const answers = outcomes.map(describeOutcome).filter((answer) => answer !== undefined);
   const added = outcomes.find((o) => o.tool === "add_message_to_request" && o.result.ok);

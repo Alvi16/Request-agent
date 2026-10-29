@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import {
-  classificationPromptVersion,
-  createOllamaClassifier,
-  typeProbability,
-} from "./classifier.ts";
+import { classificationPromptVersion, createOllamaClassifier } from "./classifier.ts";
+import { valueProbability } from "./ollama.ts";
 
 // Splits an answer into tokens the way a model would return them, with one probability per token.
 function tokens(parts: [string, number][]) {
@@ -39,7 +36,7 @@ function classifierFor(send: typeof fetch) {
   });
 }
 
-describe("typeProbability", () => {
+describe("valueProbability", () => {
   it("multiplies the probabilities of the tokens that spell the type", () => {
     const logprobs = tokens([
       ['{"', 1],
@@ -50,7 +47,7 @@ describe("typeProbability", () => {
       ['","', 1],
     ]);
 
-    expect(typeProbability(logprobs, "FEATURE_REQUEST")).toBeCloseTo(0.4);
+    expect(valueProbability(logprobs, "type", "FEATURE_REQUEST")).toBeCloseTo(0.4);
   });
 
   it("ignores the same word written later in the answer", () => {
@@ -61,16 +58,17 @@ describe("typeProbability", () => {
       ["BUG", 0.1],
     ]);
 
-    expect(typeProbability(logprobs, "BUG")).toBeCloseTo(0.6);
+    expect(valueProbability(logprobs, "type", "BUG")).toBeCloseTo(0.6);
   });
 
   it("is undefined when the type is not in the answer", () => {
     expect(
-      typeProbability(
+      valueProbability(
         tokens([
           ['{"type":"', 1],
           ["BUG", 1],
         ]),
+        "type",
         "OTHER",
       ),
     ).toBeUndefined();

@@ -22,6 +22,20 @@
       "when": 1793159209580,
       "tag": "0002_app_role",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793240704187,
+      "tag": "0003_message_handling",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793240704882,
+      "tag": "0004_text_similarity",
+      "breakpoints": true
     }
   ]
 }

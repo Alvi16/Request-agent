@@ -22,12 +22,28 @@ describe("composeReply", () => {
     const outcomes: ToolOutcome[] = [
       {
         tool: "create_request",
-        result: { ok: true, value: { request: { ...request, needsReview: true }, created: true } },
+        result: {
+          ok: true,
+          value: { request: { ...request, needsReview: true }, created: true, duplicate: false },
+        },
       },
     ];
 
     expect(composeReply(outcomes, undefined)).toBe(
       "Votre demande est enregistrée sous la référence REQ-0007. Une personne de l'équipe va la vérifier.",
+    );
+  });
+
+  it("says the message was added to the existing request it repeats", () => {
+    const outcomes: ToolOutcome[] = [
+      {
+        tool: "create_request",
+        result: { ok: true, value: { request, created: false, duplicate: true } },
+      },
+    ];
+
+    expect(composeReply(outcomes, undefined)).toBe(
+      "Votre message concerne la demande existante REQ-0007 : il y a été ajouté.",
     );
   });
 

@@ -11,14 +11,23 @@ import type { Turn } from "./turn.ts";
 // recognized as a follow-up. Bounded, since every message is text written by someone else.
 const contextMessageCount = 4;
 const contextMessageLength = 600;
+const unclassifiedTitleLength = 80;
 
 // A turn whose message has been classified. Only code computes it: the language model receives the
 // result and cannot change the type, the confidence or the review it leads to.
+// An existing request the message may be about, with the confidence of the model in it.
+export interface PossibleDuplicate {
+  reference: string;
+  confidence: number;
+}
+
 export interface ClassifiedTurn extends Turn {
   // Subject and body of the message, as the sender wrote them.
   messageText: string;
   classification: Classification;
   reviewThreshold: number;
+  // Set only when the model named an existing request: null otherwise.
+  duplicate: PossibleDuplicate | null;
 }
 
 // Earlier messages of the conversation, oldest first, and the request it is linked to, when the
@@ -82,7 +91,44 @@ export async function classifyTurn(
     text,
     context: await conversationContext(db, turn),
   });
-  return { ...turn, messageText: text, classification, reviewThreshold: options.reviewThreshold };
+  return {
+    ...turn,
+    messageText: text,
+    classification,
+    reviewThreshold: options.reviewThreshold,
+    duplicate: null,
+  };
+}
+
+// A turn for a message the model could not classify, for example while Ollama is down: filed as
+// OTHER with no confidence, so it waits for a person instead of being lost.
+export async function unclassifiedTurn(db: Database, turn: Turn): Promise<ClassifiedTurn> {
+  const [message] = await db
+    .select({ subject: messages.subject, bodyText: messages.bodyText })
+    .from(messages)
+    .where(eq(messages.id, turn.messageId));
+  if (message === undefined) {
+    throw new Error(`Message ${turn.messageId} must be stored before the agent handles it`);
+  }
+  const text =
+    message.subject === null ? message.bodyText : `${message.subject}\n\n${message.bodyText}`;
+  return {
+    ...turn,
+    messageText: text,
+    reviewThreshold: 1,
+    duplicate: null,
+    classification: {
+      type: "OTHER",
+      priority: null,
+      title:
+        (message.subject ?? message.bodyText).slice(0, unclassifiedTitleLength).trim() ||
+        "(no title)",
+      summary: "",
+      confidence: 0,
+      model: "none",
+      promptVersion: "none",
+    },
+  };
 }
 
 export type ReviewReason =
@@ -90,6 +136,8 @@ export type ReviewReason =
   | "PROJECT_AMBIGUOUS"
   | "PROJECT_UNKNOWN"
   | "UNVERIFIED_SENDER"
+  // The message may be about an existing request, without enough confidence to merge them.
+  | "POSSIBLE_DUPLICATE"
   // The agent ended without filing the message, so the system filed it.
   | "UNHANDLED";
 
@@ -107,6 +155,9 @@ export function reviewReasons(turn: ClassifiedTurn, projectId: string | null): R
   }
   if (turn.actor.kind === "anonymous") {
     reasons.push("UNVERIFIED_SENDER");
+  }
+  if (turn.duplicate !== null && turn.duplicate.confidence < turn.reviewThreshold) {
+    reasons.push("POSSIBLE_DUPLICATE");
   }
   return reasons;
 }

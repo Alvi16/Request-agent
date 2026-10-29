@@ -79,21 +79,23 @@ A logical group of messages.
 
 A message received or sent, on any channel.
 
-| Column              | Description                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| `conversation_id`   | Conversation of the message. It must be on the same channel                            |
-| `channel`           | `SLACK` or `EMAIL`                                                                     |
-| `external_id`       | Slack message (channel ID and timestamp) or email Message-ID                           |
-| `direction`         | `INBOUND` (received) or `OUTBOUND` (sent by the agent)                                 |
-| `request_id`        | Request the message belongs to, once identified                                        |
-| `author_contact_id` | Author, once identified                                                                |
-| `sender`            | Sender as given by the channel: email address or Slack user ID                         |
-| `subject`           | Email subject                                                                          |
-| `body_text`         | Text of the message                                                                    |
-| `raw`               | Original payload received from the channel, to always be able to go back to the source |
-| `in_reply_to`       | Message-ID of the email it answers                                                     |
-| `sent_at`           | When the author sent it                                                                |
-| `received_at`       | When the system received it                                                            |
+| Column              | Description                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `conversation_id`   | Conversation of the message. It must be on the same channel                                                         |
+| `channel`           | `SLACK` or `EMAIL`                                                                                                  |
+| `external_id`       | Slack message (channel ID and timestamp) or email Message-ID                                                        |
+| `direction`         | `INBOUND` (received) or `OUTBOUND` (sent by the agent)                                                              |
+| `request_id`        | Request the message belongs to, once identified                                                                     |
+| `author_contact_id` | Author, once identified                                                                                             |
+| `sender`            | Sender as given by the channel: email address or Slack user ID                                                      |
+| `subject`           | Email subject                                                                                                       |
+| `body_text`         | Text of the message                                                                                                 |
+| `raw`               | Original payload received from the channel, to always be able to go back to the source                              |
+| `in_reply_to`       | Message-ID of the email it answers                                                                                  |
+| `sent_at`           | When the author sent it                                                                                             |
+| `received_at`       | When the system received it                                                                                         |
+| `handled_at`        | When the system finished with an inbound message. Empty while it waits to be handled, so a restart handles it again |
+| `handling_attempts` | Failed attempts to handle the message                                                                               |
 
 A message is stored only once for a given channel and external ID, so an email processed twice does not create a second request.
 

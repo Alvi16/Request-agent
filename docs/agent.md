@@ -7,9 +7,10 @@ This page describes what happens to a message received by the agent, how it is c
 1. **The channel adapter stores the message**, with its conversation, and tells whether the channel verified its sender.
 2. **The code identifies the sender and the project**, with fixed rules: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the project is ambiguous.
 3. **The classifier reads the message** and the last 4 messages of its conversation. In one call to the model, without tools, it gives the type, the priority, a title and a one-sentence summary. Its confidence is read from the probabilities of the tokens of the type, not written by the model. If this step fails, nothing is written.
-4. **The agent decides what to do.** It receives the facts computed by the code (sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request, give a status or ask a question. It stops as soon as the message is filed, added to a request or answered by a question.
-5. **The code makes sure no message is lost.** If the agent ends without filing or answering the message, and the message is not clearly `OTHER`, the code files it for a review, with the reason `UNHANDLED`.
-6. **The code writes the answer to the sender** from what the tools did: the reference of the request, the message added to a request, the status, the clarification question or the requests found. The text written by the model is never sent: a small local model mixes its reasoning with its answer, and can promise actions that nobody performed. No answer is sent for a message that is clearly `OTHER`, such as thanks, which also avoids loops of automatic replies by email.
+4. **The code looks for an open request about the same problem.** It takes candidates from the open requests of the project that the sender can reach, by words and by spelling, and the model says which one repeats the message, if any. See [Duplicates](#duplicates).
+5. **The agent decides what to do.** It receives the facts computed by the code (sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request, give a status or ask a question. It stops as soon as the message is filed, added to a request or answered by a question.
+6. **The code makes sure no message is lost.** If the agent ends without filing or answering the message, and the message is not clearly `OTHER`, the code files it for a review, with the reason `UNHANDLED`. If handling fails, for example while Ollama is down, the message is handled again after 1 minute, then after 5 minutes. After the third failure, it is filed for a person without classification. See [Reliability](#reliability).
+7. **The code writes the answer to the sender** from what the tools did: the reference of the request, the message added to a request, the status, the clarification question or the requests found. The text written by the model is never sent: a small local model mixes its reasoning with its answer, and can promise actions that nobody performed. No answer is sent for a message that is clearly `OTHER`, such as thanks, which also avoids loops of automatic replies by email.
 
 The agent makes at most 5 calls to the model per message. Thinking mode is turned off, because it more than triples the answer time on a CPU. Answers are written in French.
 
@@ -43,16 +44,44 @@ The priority stays empty when the message does not tell enough to estimate it.
 
 A new request waits for a person (`needs_review`) when at least one of these is true:
 
-| Reason              | When                                                                        |
-| ------------------- | --------------------------------------------------------------------------- |
-| `LOW_CONFIDENCE`    | The confidence of the classification is below the threshold, 0.8 by default |
-| `PROJECT_AMBIGUOUS` | Several projects are possible                                               |
-| `PROJECT_UNKNOWN`   | No project could be identified                                              |
-| `UNVERIFIED_SENDER` | The channel could not verify who sent the message                           |
+| Reason               | When                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `LOW_CONFIDENCE`     | The confidence of the classification is below the threshold, 0.8 by default         |
+| `PROJECT_AMBIGUOUS`  | Several projects are possible                                                       |
+| `PROJECT_UNKNOWN`    | No project could be identified                                                      |
+| `UNVERIFIED_SENDER`  | The channel could not verify who sent the message                                   |
+| `POSSIBLE_DUPLICATE` | The message may repeat an open request, without enough confidence to add it there   |
+| `UNHANDLED`          | The agent did not file the message, or it could not be handled after three attempts |
 
 The threshold is set with `CLASSIFICATION_REVIEW_THRESHOLD`, between 0 and 1. The code decides the review, never the model.
 
 A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request, and the agent is not run, which saves its calls. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
+
+The team works through the review queue with three operations of the business core, used by the web interface: list the requests waiting for review, with their reasons; review a request, optionally correcting its type, priority, project or status; and mark a request as a duplicate of another one, which closes it and points it to the original. Each of them is recorded in the history as an action of a person (`REVIEWED`, `MARKED_DUPLICATE`, `STATUS_CHANGED`).
+
+## Duplicates
+
+When a message is a new request (any type but `FOLLOW_UP`, `STATUS_REQUEST` and `OTHER`) and its project is identified, the code compares it with the open requests (`NEW`, `IN_PROGRESS`, `WAITING_FOR_INFO`) of that project that the sender can reach:
+
+1. The 5 best requests by full-text search and the 5 best by trigram similarity, at most 8 in all, are the candidates. An unverified sender reaches no request, so the existence of other requests is never revealed.
+2. The model reads the message and the candidates, and names the request about the same problem, or none. Its confidence is read from the probabilities of its answer.
+3. With a confidence of at least the review threshold, `create_request` adds the message to that request instead of filing a new one, and the answer says so. Below it, a new request is filed, linked to the candidate (`duplicate_of_request_id`), and waits for a review with the reason `POSSIBLE_DUPLICATE`.
+
+Measured on 24 messages against 84 requests per project. The candidate search found the request about the same problem 7 times out of 8: the miss shares no word with it ("régler par CB" next to "paiement par carte bancaire"). Given the candidates, the model took the right decision for all 24 messages: it recognized the 9 duplicates among them, and named no request for the 15 others, including close but different problems such as PayPal next to card payments. Its confidence on the right duplicates ranged from 0.56 to 0.92, so with the threshold of 0.8, 3 messages were added to their request and 6 were filed for review, linked to the right one. Adding a message to the wrong request would hide it, while an extra review costs a click, so the threshold stays prudent. The check takes about 35 s per message on a CPU.
+
+```bash
+pnpm eval:duplicates
+```
+
+measures the judge again on these messages and their candidates, kept in [`packages/core/eval/duplicates.json`](../packages/core/eval/duplicates.json).
+
+## Reliability
+
+Each inbound message records when it was handled (`handled_at`) and how many attempts failed (`handling_attempts`):
+
+- A message is marked as handled only once the agent handled it, or once it was filed for a person. A message still unhandled when the server restarts is handled again: the Slack adapter reads it from its stored event, and the email adapter from the original email, which is kept with the message.
+- A failed attempt is retried after 1 minute, then after 5 minutes. After the third failure, the message is filed as an `OTHER` request with no confidence, waiting for a person, and the sender receives its reference.
+- Automatic emails, such as out-of-office replies, are marked as handled as soon as they are stored.
 
 ## What the agent does
 
@@ -61,6 +90,7 @@ A message classified `OTHER` with a confidence above the threshold, such as than
 | `FOLLOW_UP` or `STATUS_REQUEST`  | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request |
 | Another type, project identified | Files the message as a new request                                                                                                                                                      |
 | Another type, project not clear  | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                      |
+| Repeats an open request          | `create_request` adds the message to it, when the model is confident enough                                                                                                             |
 | `OTHER`, confident               | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                   |
 | Unverified sender                | Only files the message, which waits for a review                                                                                                                                        |
 

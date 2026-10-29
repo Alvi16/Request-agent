@@ -1,11 +1,13 @@
 import type { Agent } from "@mastra/core/agent";
 import {
+  assessDuplicate,
   type ClassifiedTurn,
   type Classifier,
   classifyTurn,
   type Database,
   describeContact,
   describeProject,
+  type DuplicateJudge,
   fileUnhandledMessage,
   findRequest,
   isNotARequest,
@@ -31,6 +33,7 @@ const settlingTools = new Set<ToolOutcome["tool"]>([
 
 export interface ClassificationSettings {
   classify: Classifier;
+  judgeDuplicate: DuplicateJudge;
   reviewThreshold: number;
 }
 
@@ -59,6 +62,8 @@ async function describeTurn(db: Database, turn: ClassifiedTurn): Promise<string>
       reviewThreshold: turn.reviewThreshold,
     },
     requestLinkedToConversation: linked.ok ? linked.value.request : null,
+    // An open request the message may repeat: create_request then adds the message to it.
+    possibleDuplicate: turn.duplicate,
     referencesInMessage: [...new Set(referencesIn(turn.messageText))],
   };
   return `Facts computed by the system for the message to handle. They are reliable:\n${JSON.stringify(facts, null, 2)}`;
@@ -82,7 +87,8 @@ export async function handleMessage(
   input: TurnInput,
   settings: ClassificationSettings,
 ): Promise<HandledMessage> {
-  const turn = await classifyTurn(db, await prepareTurn(db, input), settings);
+  const classified = await classifyTurn(db, await prepareTurn(db, input), settings);
+  const turn = await assessDuplicate(db, classified, settings.judgeDuplicate);
   // Thanks or an advertisement needs no action: the agent is not run, which saves its calls.
   if (isNotARequest(turn)) {
     return { reply: null, filedBySystem: false };

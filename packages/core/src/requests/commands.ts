@@ -80,6 +80,8 @@ export interface CreatedRequest {
   request: RequestView;
   // False when the message had already been filed: the existing request is returned instead.
   created: boolean;
+  // True when the message was added to an existing request about the same problem.
+  duplicate: boolean;
 }
 
 type TurnMessage = Awaited<ReturnType<typeof lockTurnMessage>>;
@@ -110,6 +112,7 @@ async function insertRequest(
   projectId: string | null,
   status: RequestStatus,
   extraReasons: ReviewReason[] = [],
+  duplicateOf?: string,
 ): Promise<string> {
   const { classification } = turn;
   const reasons = [...reviewReasons(turn, projectId), ...extraReasons];
@@ -129,6 +132,7 @@ async function insertRequest(
       sourceChannel: message.channel,
       confidence: classification.confidence,
       needsReview: reasons.length > 0 || status === "WAITING_FOR_INFO",
+      duplicateOfRequestId: duplicateOf ?? null,
     })
     .returning({ id: requests.id });
   if (request === undefined) {
@@ -169,7 +173,11 @@ export function createRequest(
   return db.transaction(async (tx) => {
     const message = await lockTurnMessage(tx, turn);
     if (message.requestId !== null) {
-      return succeed({ request: await loadView(tx, message.requestId), created: false });
+      return succeed({
+        request: await loadView(tx, message.requestId),
+        created: false,
+        duplicate: false,
+      });
     }
     if (isNotARequest(turn)) {
       return fail("NOT_A_REQUEST");
@@ -182,8 +190,48 @@ export function createRequest(
     if (!project.ok) {
       return project;
     }
-    const requestId = await insertRequest(tx, turn, message, project.value, "NEW");
-    return succeed({ request: await loadView(tx, requestId), created: true });
+    const duplicateOf =
+      turn.duplicate === null
+        ? undefined
+        : await lockVisibleRequest(tx, turn, turn.duplicate.reference);
+    // A confident duplicate gets the message instead of a second request about the same problem.
+    if (
+      turn.duplicate !== null &&
+      duplicateOf !== undefined &&
+      turn.duplicate.confidence >= turn.reviewThreshold
+    ) {
+      await tx
+        .update(messages)
+        .set({ requestId: duplicateOf.id })
+        .where(eq(messages.id, message.id));
+      await tx
+        .update(requests)
+        .set({ updatedAt: new Date() })
+        .where(eq(requests.id, duplicateOf.id));
+      await tx.insert(events).values({
+        requestId: duplicateOf.id,
+        type: "MESSAGE_ADDED",
+        actorType: "AGENT",
+        channel: message.channel,
+        messageId: message.id,
+        data: { reason: "DUPLICATE", confidence: turn.duplicate.confidence },
+      });
+      return succeed({
+        request: await loadView(tx, duplicateOf.id),
+        created: false,
+        duplicate: true,
+      });
+    }
+    const requestId = await insertRequest(
+      tx,
+      turn,
+      message,
+      project.value,
+      "NEW",
+      [],
+      duplicateOf?.id,
+    );
+    return succeed({ request: await loadView(tx, requestId), created: true, duplicate: false });
   });
 }
 

@@ -238,6 +238,11 @@ export const messages = pgTable(
     inReplyTo: text("in_reply_to"),
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull(),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    // When the system finished with an inbound message, whatever the outcome. A message still
+    // empty after a restart was never handled, and is handled again.
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    // Failed attempts to handle the message, so a message that keeps failing is not retried forever.
+    handlingAttempts: integer("handling_attempts").notNull().default(0),
   },
   (t) => [
     unique("messages_channel_external_id_key").on(t.channel, t.externalId),
@@ -249,6 +254,10 @@ export const messages = pgTable(
     index("messages_conversation_id_idx").on(t.conversationId),
     index("messages_request_id_idx").on(t.requestId),
     index("messages_author_contact_id_idx").on(t.authorContactId),
+    // Finds the inbound messages left unhandled, which are few, without reading all messages.
+    index("messages_unhandled_idx")
+      .on(t.receivedAt)
+      .where(sql`${t.direction} = 'INBOUND' and ${t.handledAt} is null`),
   ],
 );
 
