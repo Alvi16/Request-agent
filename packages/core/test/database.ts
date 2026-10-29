@@ -13,6 +13,7 @@ declare module "vitest" {
 }
 
 const tables = [
+  schema.mailboxCursors,
   schema.staffSessions,
   schema.staffAccounts,
   schema.attachments,
