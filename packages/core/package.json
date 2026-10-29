@@ -15,7 +15,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.ts",
     "db:seed": "node --env-file-if-exists=../../.env scripts/seed.ts",
-    "eval:classification": "node --env-file-if-exists=../../.env scripts/eval-classification.ts"
+    "eval:classification": "node --env-file-if-exists=../../.env scripts/eval-classification.ts",
+    "eval:duplicates": "node --env-file-if-exists=../../.env scripts/eval-duplicates.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

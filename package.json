@@ -20,6 +20,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "eval:classification": "pnpm --filter @request-agent/core eval:classification",
+    "eval:duplicates": "pnpm --filter @request-agent/core eval:duplicates",
     "lint": "oxlint",
     "format": "prettier . --write --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore",
     "format:check": "prettier . --check --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore"

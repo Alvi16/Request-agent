@@ -1,0 +1,1106 @@
+[
+  {
+    "text": "Impossible de régler par CB, la transaction est rejetée à chaque fois que je valide mon achat.",
+    "candidates": [
+      {
+        "reference": "REQ-0113",
+        "title": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il",
+        "summary": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il y a beaucoup de lignes. Possible de l'accélérer ?"
+      },
+      {
+        "reference": "REQ-0129",
+        "title": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il f",
+        "summary": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il faudrait au moins 3 et 4 fois."
+      },
+      {
+        "reference": "REQ-0003",
+        "title": "Remise du code promo appliquée deux fois",
+        "summary": "Le total du panier est faux avec un code promo : la remise est déduite deux fois."
+      },
+      {
+        "reference": "REQ-0004",
+        "title": "Ajouter le paiement en plusieurs fois",
+        "summary": "Les clients veulent payer en 3 ou 4 fois."
+      },
+      {
+        "reference": "REQ-0102",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0104",
+        "title": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus.",
+        "summary": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus."
+      },
+      {
+        "reference": "REQ-0106",
+        "title": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos",
+        "summary": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos clients le demandent beaucoup."
+      },
+      {
+        "reference": "REQ-0132",
+        "title": "Est-ce que vous avez une date pour la correction du bouton de validation ?",
+        "summary": "Est-ce que vous avez une date pour la correction du bouton de validation ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Quand je mets un article dans mon panier, tous les autres disparaissent.",
+    "candidates": [
+      {
+        "reference": "REQ-0002",
+        "title": "Panier vidé après ajout d'un produit",
+        "summary": "Le panier se vide quand on ajoute un nouveau produit."
+      },
+      {
+        "reference": "REQ-0102",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0145",
+        "title": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a p",
+        "summary": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+      },
+      {
+        "reference": "REQ-0141",
+        "title": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregis",
+        "summary": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregistrer et tout disparaît."
+      },
+      {
+        "reference": "REQ-0121",
+        "title": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne t",
+        "summary": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne trouve pas le menu."
+      },
+      {
+        "reference": "REQ-0105",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0156",
+        "title": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €,",
+        "summary": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €, merci de mettre à jour."
+      }
+    ],
+    "sameProblem": ["REQ-0002"]
+  },
+  {
+    "text": "Avec le code BIENVENUE10, la réduction est comptée 2 fois sur le montant total.",
+    "candidates": [
+      {
+        "reference": "REQ-0003",
+        "title": "Remise du code promo appliquée deux fois",
+        "summary": "Le total du panier est faux avec un code promo : la remise est déduite deux fois."
+      },
+      {
+        "reference": "REQ-0102",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0150",
+        "title": "une fonction de chat en direct avec le service client sur la boutique, ce serait",
+        "summary": "une fonction de chat en direct avec le service client sur la boutique, ce serait top"
+      },
+      {
+        "reference": "REQ-0166",
+        "title": "J'ai refait le test ce matin avec un autre code, même résultat : la remise est a",
+        "summary": "J'ai refait le test ce matin avec un autre code, même résultat : la remise est appliquée deux fois."
+      },
+      {
+        "reference": "REQ-0124",
+        "title": "quelle est la différence entre un compte admin et un compte gestionnaire dans le",
+        "summary": "quelle est la différence entre un compte admin et un compte gestionnaire dans le portail ?"
+      },
+      {
+        "reference": "REQ-0129",
+        "title": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il f",
+        "summary": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il faudrait au moins 3 et 4 fois."
+      },
+      {
+        "reference": "REQ-0154",
+        "title": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le",
+        "summary": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le mois précédent."
+      },
+      {
+        "reference": "REQ-0004",
+        "title": "Ajouter le paiement en plusieurs fois",
+        "summary": "Les clients veulent payer en 3 ou 4 fois."
+      }
+    ],
+    "sameProblem": ["REQ-0003"]
+  },
+  {
+    "text": "Serait-il possible de proposer un paiement échelonné en plusieurs mensualités ?",
+    "candidates": [
+      {
+        "reference": "REQ-0106",
+        "title": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos",
+        "summary": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos clients le demandent beaucoup."
+      },
+      {
+        "reference": "REQ-0129",
+        "title": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il f",
+        "summary": "Petite précision sur ma demande d'hier pour le paiement en plusieurs fois : il faudrait au moins 3 et 4 fois."
+      },
+      {
+        "reference": "REQ-0004",
+        "title": "Ajouter le paiement en plusieurs fois",
+        "summary": "Les clients veulent payer en 3 ou 4 fois."
+      },
+      {
+        "reference": "REQ-0154",
+        "title": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le",
+        "summary": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le mois précédent."
+      },
+      {
+        "reference": "REQ-0001",
+        "title": "Paiement par carte refusé",
+        "summary": "Les paiements par carte bancaire échouent au moment de valider la commande."
+      },
+      {
+        "reference": "REQ-0112",
+        "title": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieur",
+        "summary": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieurs villes à la fois."
+      },
+      {
+        "reference": "REQ-0143",
+        "title": "urgent : impossible de passer commande, le paiement tourne dans le vide puis tim",
+        "summary": "urgent : impossible de passer commande, le paiement tourne dans le vide puis timeout"
+      },
+      {
+        "reference": "REQ-0153",
+        "title": "Bonjour, la recherche du portail fonctionne mais elle gagnerait à proposer des s",
+        "summary": "Bonjour, la recherche du portail fonctionne mais elle gagnerait à proposer des suggestions pendant la frappe."
+      }
+    ],
+    "sameProblem": ["REQ-0004", "REQ-0106"]
+  },
+  {
+    "text": "L'export des contacts au format CSV ne marche plus pour les gros fichiers, ça bloque au-delà de mille lignes.",
+    "candidates": [
+      {
+        "reference": "REQ-0005",
+        "title": "Export CSV des contacts qui plante",
+        "summary": "L'export CSV plante dès qu'il y a plus de 1000 contacts."
+      },
+      {
+        "reference": "REQ-0183",
+        "title": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis pag",
+        "summary": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis page blanche"
+      },
+      {
+        "reference": "REQ-0208",
+        "title": "Je reviens vers vous concernant l'export CSV : ça plante encore ce matin, c'est ",
+        "summary": "Je reviens vers vous concernant l'export CSV : ça plante encore ce matin, c'est bloquant pour notre clôture mensuelle."
+      },
+      {
+        "reference": "REQ-0192",
+        "title": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieur",
+        "summary": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieurs villes à la fois."
+      },
+      {
+        "reference": "REQ-0231",
+        "title": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes expo",
+        "summary": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes exportées."
+      },
+      {
+        "reference": "REQ-0224",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0249",
+        "title": "Je relance au sujet du bug d'export signalé la semaine dernière, ça bloque toujo",
+        "summary": "Je relance au sujet du bug d'export signalé la semaine dernière, ça bloque toujours notre équipe."
+      },
+      {
+        "reference": "REQ-0006",
+        "title": "Filtre des contacts par plusieurs villes",
+        "summary": "Pouvoir combiner plusieurs villes dans le filtre des contacts."
+      }
+    ],
+    "sameProblem": ["REQ-0005"]
+  },
+  {
+    "text": "J'écris une note sur la fiche d'un client, je clique sur Enregistrer et elle n'est pas sauvegardée.",
+    "candidates": [
+      {
+        "reference": "REQ-0221",
+        "title": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregis",
+        "summary": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregistrer et tout disparaît."
+      },
+      {
+        "reference": "REQ-0007",
+        "title": "Notes des fiches clients non enregistrées",
+        "summary": "Les notes ajoutées sur une fiche client disparaissent après l'enregistrement."
+      },
+      {
+        "reference": "REQ-0201",
+        "title": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne t",
+        "summary": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne trouve pas le menu."
+      },
+      {
+        "reference": "REQ-0229",
+        "title": "Bonjour, on voudrait intégrer le CRM à notre outil de téléphonie pour voir la fi",
+        "summary": "Bonjour, on voudrait intégrer le CRM à notre outil de téléphonie pour voir la fiche du client qui appelle."
+      },
+      {
+        "reference": "REQ-0181",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0190",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0194",
+        "title": "Pour l'export PDF des factures, ce serait bien d'avoir aussi le logo du client e",
+        "summary": "Pour l'export PDF des factures, ce serait bien d'avoir aussi le logo du client en en-tête, en plus des infos actuelles."
+      },
+      {
+        "reference": "REQ-0203",
+        "title": "Est-ce qu'on peut importer nos anciens clients depuis un fichier Excel ? Si oui,",
+        "summary": "Est-ce qu'on peut importer nos anciens clients depuis un fichier Excel ? Si oui, quel format faut-il ?"
+      }
+    ],
+    "sameProblem": ["REQ-0007", "REQ-0221"]
+  },
+  {
+    "text": "Le portail client est inaccessible : erreur 500 quand on essaie de se connecter.",
+    "candidates": [
+      {
+        "reference": "REQ-0261",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0009",
+        "title": "Erreur 500 à la connexion",
+        "summary": "Le portail affiche une erreur 500 à la connexion, plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0267",
+        "title": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'",
+        "summary": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'est envisageable ?"
+      },
+      {
+        "reference": "REQ-0323",
+        "title": "Est-ce que le portail fonctionne sur tablette ou seulement sur ordinateur ?",
+        "summary": "Est-ce que le portail fonctionne sur tablette ou seulement sur ordinateur ?"
+      },
+      {
+        "reference": "REQ-0011",
+        "title": "Connexion avec les comptes Microsoft",
+        "summary": "Pouvoir se connecter au portail avec un compte Microsoft (SSO)."
+      },
+      {
+        "reference": "REQ-0262",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0270",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0273",
+        "title": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il",
+        "summary": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il y a beaucoup de lignes. Possible de l'accélérer ?"
+      }
+    ],
+    "sameProblem": ["REQ-0009", "REQ-0261"]
+  },
+  {
+    "text": "Les dates sont affichées à l'américaine (10/28/2026) depuis la dernière version.",
+    "candidates": [
+      {
+        "reference": "REQ-0010",
+        "title": "Dates au format américain",
+        "summary": "Depuis la mise à jour, les dates s'affichent au format mois/jour/année."
+      },
+      {
+        "reference": "REQ-0304",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0261",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0264",
+        "title": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus.",
+        "summary": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus."
+      },
+      {
+        "reference": "REQ-0333",
+        "title": "Est-ce que la correction des dates au format américain est déjà en production ?",
+        "summary": "Est-ce que la correction des dates au format américain est déjà en production ?"
+      },
+      {
+        "reference": "REQ-0012",
+        "title": "Tri des tickets par date de mise à jour",
+        "summary": "Trier le tableau des tickets par date de dernière mise à jour."
+      },
+      {
+        "reference": "REQ-0302",
+        "title": "Bonjour, la facture n° 2026-118 affiche une TVA à 0 € alors que le taux est bien",
+        "summary": "Bonjour, la facture n° 2026-118 affiche une TVA à 0 € alors que le taux est bien paramétré."
+      },
+      {
+        "reference": "REQ-0265",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      }
+    ],
+    "sameProblem": ["REQ-0010"]
+  },
+  {
+    "text": "Le paiement par PayPal n'est pas proposé, pouvez-vous l'ajouter ?",
+    "candidates": [
+      {
+        "reference": "REQ-0004",
+        "title": "Ajouter le paiement en plusieurs fois",
+        "summary": "Les clients veulent payer en 3 ou 4 fois."
+      },
+      {
+        "reference": "REQ-0106",
+        "title": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos",
+        "summary": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos clients le demandent beaucoup."
+      },
+      {
+        "reference": "REQ-0125",
+        "title": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients su",
+        "summary": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+      },
+      {
+        "reference": "REQ-0134",
+        "title": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et qua",
+        "summary": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et quand il sera en ligne ?"
+      },
+      {
+        "reference": "REQ-0164",
+        "title": "Notre nouvelle collègue n'a pas reçu son invitation au CRM, pouvez-vous m'expliq",
+        "summary": "Notre nouvelle collègue n'a pas reçu son invitation au CRM, pouvez-vous m'expliquer comment la renvoyer ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0146",
+        "title": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des pro",
+        "summary": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des produits de côté ?"
+      },
+      {
+        "reference": "REQ-0121",
+        "title": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne t",
+        "summary": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne trouve pas le menu."
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Les frais de livraison ne s'affichent pas dans le récapitulatif du panier.",
+    "candidates": [
+      {
+        "reference": "REQ-0144",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0156",
+        "title": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €,",
+        "summary": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €, merci de mettre à jour."
+      },
+      {
+        "reference": "REQ-0111",
+        "title": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les ",
+        "summary": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les descriptions, pas seulement dans les noms."
+      },
+      {
+        "reference": "REQ-0105",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0118",
+        "title": "Finalement nous ne voulons plus la livraison gratuite dès 50 €, mais dès 80 €. P",
+        "summary": "Finalement nous ne voulons plus la livraison gratuite dès 50 €, mais dès 80 €. Pouvez-vous modifier la règle ?"
+      },
+      {
+        "reference": "REQ-0141",
+        "title": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregis",
+        "summary": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregistrer et tout disparaît."
+      },
+      {
+        "reference": "REQ-0153",
+        "title": "Bonjour, la recherche du portail fonctionne mais elle gagnerait à proposer des s",
+        "summary": "Bonjour, la recherche du portail fonctionne mais elle gagnerait à proposer des suggestions pendant la frappe."
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Le code promo NOEL20 est refusé alors qu'il est encore valable.",
+    "candidates": [
+      {
+        "reference": "REQ-0003",
+        "title": "Remise du code promo appliquée deux fois",
+        "summary": "Le total du panier est faux avec un code promo : la remise est déduite deux fois."
+      },
+      {
+        "reference": "REQ-0102",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0145",
+        "title": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a p",
+        "summary": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+      },
+      {
+        "reference": "REQ-0128",
+        "title": "Je reviens vers vous concernant l'export CSV : ça plante encore ce matin, c'est ",
+        "summary": "Je reviens vers vous concernant l'export CSV : ça plante encore ce matin, c'est bloquant pour notre clôture mensuelle."
+      },
+      {
+        "reference": "REQ-0142",
+        "title": "Bonjour, la facture n° 2026-118 affiche une TVA à 0 € alors que le taux est bien",
+        "summary": "Bonjour, la facture n° 2026-118 affiche une TVA à 0 € alors que le taux est bien paramétré."
+      },
+      {
+        "reference": "REQ-0166",
+        "title": "J'ai refait le test ce matin avec un autre code, même résultat : la remise est a",
+        "summary": "J'ai refait le test ce matin avec un autre code, même résultat : la remise est appliquée deux fois."
+      },
+      {
+        "reference": "REQ-0122",
+        "title": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est ",
+        "summary": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est pas encore arrivé, que dois-je faire ?"
+      },
+      {
+        "reference": "REQ-0001",
+        "title": "Paiement par carte refusé",
+        "summary": "Les paiements par carte bancaire échouent au moment de valider la commande."
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Les photos des produits s'affichent floues sur mobile.",
+    "candidates": [
+      {
+        "reference": "REQ-0111",
+        "title": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les ",
+        "summary": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les descriptions, pas seulement dans les noms."
+      },
+      {
+        "reference": "REQ-0144",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0108",
+        "title": "Il nous faudrait une application mobile pour que les commerciaux consultent le C",
+        "summary": "Il nous faudrait une application mobile pour que les commerciaux consultent le CRM en déplacement."
+      },
+      {
+        "reference": "REQ-0152",
+        "title": "La page produit est correcte, mais on aimerait afficher plus de photos dans la g",
+        "summary": "La page produit est correcte, mais on aimerait afficher plus de photos dans la galerie, 10 au lieu de 4."
+      },
+      {
+        "reference": "REQ-0165",
+        "title": "c'est quoi la limite de taille pour les images produits ?",
+        "summary": "c'est quoi la limite de taille pour les images produits ?"
+      },
+      {
+        "reference": "REQ-0146",
+        "title": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des pro",
+        "summary": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des produits de côté ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0105",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "L'export PDF des factures ne contient pas le logo du client.",
+    "candidates": [
+      {
+        "reference": "REQ-0194",
+        "title": "Pour l'export PDF des factures, ce serait bien d'avoir aussi le logo du client e",
+        "summary": "Pour l'export PDF des factures, ce serait bien d'avoir aussi le logo du client en en-tête, en plus des infos actuelles."
+      },
+      {
+        "reference": "REQ-0241",
+        "title": "Comment je fais pour exporter la liste de mes clients en PDF ?",
+        "summary": "Comment je fais pour exporter la liste de mes clients en PDF ?"
+      },
+      {
+        "reference": "REQ-0005",
+        "title": "Export CSV des contacts qui plante",
+        "summary": "L'export CSV plante dès qu'il y a plus de 1000 contacts."
+      },
+      {
+        "reference": "REQ-0205",
+        "title": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients su",
+        "summary": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+      },
+      {
+        "reference": "REQ-0183",
+        "title": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis pag",
+        "summary": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis page blanche"
+      },
+      {
+        "reference": "REQ-0231",
+        "title": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes expo",
+        "summary": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes exportées."
+      },
+      {
+        "reference": "REQ-0007",
+        "title": "Notes des fiches clients non enregistrées",
+        "summary": "Les notes ajoutées sur une fiche client disparaissent après l'enregistrement."
+      },
+      {
+        "reference": "REQ-0181",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      }
+    ],
+    "sameProblem": ["REQ-0194"]
+  },
+  {
+    "text": "Pouvoir filtrer les contacts par date de création.",
+    "candidates": [
+      {
+        "reference": "REQ-0006",
+        "title": "Filtre des contacts par plusieurs villes",
+        "summary": "Pouvoir combiner plusieurs villes dans le filtre des contacts."
+      },
+      {
+        "reference": "REQ-0225",
+        "title": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a p",
+        "summary": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+      },
+      {
+        "reference": "REQ-0195",
+        "title": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plu",
+        "summary": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plus de la date de création svp"
+      },
+      {
+        "reference": "REQ-0192",
+        "title": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieur",
+        "summary": "Le filtre des contacts serait plus pratique s'il permettait de combiner plusieurs villes à la fois."
+      },
+      {
+        "reference": "REQ-0224",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0231",
+        "title": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes expo",
+        "summary": "L'export Excel du CRM marche, mais il faudrait pouvoir choisir les colonnes exportées."
+      },
+      {
+        "reference": "REQ-0005",
+        "title": "Export CSV des contacts qui plante",
+        "summary": "L'export CSV plante dès qu'il y a plus de 1000 contacts."
+      },
+      {
+        "reference": "REQ-0008",
+        "title": "Application mobile pour les commerciaux",
+        "summary": "Une application mobile pour consulter le CRM en déplacement."
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "La recherche de contacts par nom ne trouve pas les noms avec accents.",
+    "candidates": [
+      {
+        "reference": "REQ-0191",
+        "title": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les ",
+        "summary": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les descriptions, pas seulement dans les noms."
+      },
+      {
+        "reference": "REQ-0185",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0006",
+        "title": "Filtre des contacts par plusieurs villes",
+        "summary": "Pouvoir combiner plusieurs villes dans le filtre des contacts."
+      },
+      {
+        "reference": "REQ-0210",
+        "title": "Relance : toujours aucune nouvelle pour le problème d'accents dans les emails, d",
+        "summary": "Relance : toujours aucune nouvelle pour le problème d'accents dans les emails, des clients se plaignent."
+      },
+      {
+        "reference": "REQ-0225",
+        "title": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a p",
+        "summary": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+      },
+      {
+        "reference": "REQ-0235",
+        "title": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de",
+        "summary": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de l'email"
+      },
+      {
+        "reference": "REQ-0190",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0197",
+        "title": "Notre marque change de nom au 1er janvier : merci de remplacer le logo et le nom",
+        "summary": "Notre marque change de nom au 1er janvier : merci de remplacer le logo et le nom dans tout le portail."
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Les commerciaux voudraient recevoir une notification quand un client est assigné.",
+    "candidates": [
+      {
+        "reference": "REQ-0190",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0221",
+        "title": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregis",
+        "summary": "Le CRM n'enregistre plus les notes sur les fiches clients, on clique sur Enregistrer et tout disparaît."
+      },
+      {
+        "reference": "REQ-0228",
+        "title": "Est-ce qu'on pourrait avoir des notifications par SMS quand une commande est exp",
+        "summary": "Est-ce qu'on pourrait avoir des notifications par SMS quand une commande est expédiée ? Ça n'existe pas pour l'instant."
+      },
+      {
+        "reference": "REQ-0188",
+        "title": "Il nous faudrait une application mobile pour que les commerciaux consultent le C",
+        "summary": "Il nous faudrait une application mobile pour que les commerciaux consultent le CRM en déplacement."
+      },
+      {
+        "reference": "REQ-0008",
+        "title": "Application mobile pour les commerciaux",
+        "summary": "Une application mobile pour consulter le CRM en déplacement."
+      },
+      {
+        "reference": "REQ-0205",
+        "title": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients su",
+        "summary": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+      },
+      {
+        "reference": "REQ-0225",
+        "title": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a p",
+        "summary": "Quand je filtre les contacts par ville, la liste reste vide alors qu'il y en a plein à Lyon."
+      },
+      {
+        "reference": "REQ-0212",
+        "title": "Est-ce que vous avez une date pour la correction du bouton de validation ?",
+        "summary": "Est-ce que vous avez une date pour la correction du bouton de validation ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Le mot de passe oublié n'envoie aucun email de réinitialisation.",
+    "candidates": [
+      {
+        "reference": "REQ-0282",
+        "title": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est ",
+        "summary": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est pas encore arrivé, que dois-je faire ?"
+      },
+      {
+        "reference": "REQ-0290",
+        "title": "Relance : toujours aucune nouvelle pour le problème d'accents dans les emails, d",
+        "summary": "Relance : toujours aucune nouvelle pour le problème d'accents dans les emails, des clients se plaignent."
+      },
+      {
+        "reference": "REQ-0307",
+        "title": "Nous aurions besoin d'un module de prise de rendez-vous en ligne dans le portail",
+        "summary": "Nous aurions besoin d'un module de prise de rendez-vous en ligne dans le portail."
+      },
+      {
+        "reference": "REQ-0265",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0276",
+        "title": "Suite à la nouvelle loi, il faut passer le taux de TVA des livres de 5,5 % à 7 %",
+        "summary": "Suite à la nouvelle loi, il faut passer le taux de TVA des livres de 5,5 % à 7 % sur la boutique."
+      },
+      {
+        "reference": "REQ-0303",
+        "title": "urgent : impossible de passer commande, le paiement tourne dans le vide puis tim",
+        "summary": "urgent : impossible de passer commande, le paiement tourne dans le vide puis timeout"
+      },
+      {
+        "reference": "REQ-0316",
+        "title": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €,",
+        "summary": "Notre direction a décidé de passer les frais de port à 6,90 € au lieu de 4,90 €, merci de mettre à jour."
+      },
+      {
+        "reference": "REQ-0320",
+        "title": "La règle de relance automatique des devis doit passer de 7 jours à 14 jours.",
+        "summary": "La règle de relance automatique des devis doit passer de 7 jours à 14 jours."
+      }
+    ],
+    "sameProblem": ["REQ-0282"]
+  },
+  {
+    "text": "Le portail est très lent à charger la page d'accueil le matin.",
+    "candidates": [
+      {
+        "reference": "REQ-0273",
+        "title": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il",
+        "summary": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il y a beaucoup de lignes. Possible de l'accélérer ?"
+      },
+      {
+        "reference": "REQ-0261",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0304",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0263",
+        "title": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis pag",
+        "summary": "export csv plante dès qu'il y a plus de 1000 contacts, l'onglet se fige puis page blanche"
+      },
+      {
+        "reference": "REQ-0267",
+        "title": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'",
+        "summary": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'est envisageable ?"
+      },
+      {
+        "reference": "REQ-0275",
+        "title": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plu",
+        "summary": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plus de la date de création svp"
+      },
+      {
+        "reference": "REQ-0282",
+        "title": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est ",
+        "summary": "J'ai oublié mon mot de passe du portail et le lien de réinitialisation ne m'est pas encore arrivé, que dois-je faire ?"
+      },
+      {
+        "reference": "REQ-0284",
+        "title": "quelle est la différence entre un compte admin et un compte gestionnaire dans le",
+        "summary": "quelle est la différence entre un compte admin et un compte gestionnaire dans le portail ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Pouvoir se connecter avec un compte Google en plus du compte classique.",
+    "candidates": [
+      {
+        "reference": "REQ-0011",
+        "title": "Connexion avec les comptes Microsoft",
+        "summary": "Pouvoir se connecter au portail avec un compte Microsoft (SSO)."
+      },
+      {
+        "reference": "REQ-0267",
+        "title": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'",
+        "summary": "On aimerait pouvoir se connecter au portail avec nos comptes Microsoft (SSO). C'est envisageable ?"
+      },
+      {
+        "reference": "REQ-0009",
+        "title": "Erreur 500 à la connexion",
+        "summary": "Le portail affiche une erreur 500 à la connexion, plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0275",
+        "title": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plu",
+        "summary": "le tableau des tickets du portail : pouvoir trier par date de mise à jour en plus de la date de création svp"
+      },
+      {
+        "reference": "REQ-0261",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0315",
+        "title": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de",
+        "summary": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de l'email"
+      },
+      {
+        "reference": "REQ-0314",
+        "title": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le",
+        "summary": "Le rapport mensuel est bien, mais il serait utile de pouvoir le comparer avec le mois précédent."
+      },
+      {
+        "reference": "REQ-0284",
+        "title": "quelle est la différence entre un compte admin et un compte gestionnaire dans le",
+        "summary": "quelle est la différence entre un compte admin et un compte gestionnaire dans le portail ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Les heures des rendez-vous sont décalées d'une heure depuis le changement d'heure.",
+    "candidates": [
+      {
+        "reference": "REQ-0304",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0307",
+        "title": "Nous aurions besoin d'un module de prise de rendez-vous en ligne dans le portail",
+        "summary": "Nous aurions besoin d'un module de prise de rendez-vous en ligne dans le portail."
+      },
+      {
+        "reference": "REQ-0334",
+        "title": "Une idée de quand sera livré le module de rendez-vous ?",
+        "summary": "Une idée de quand sera livré le module de rendez-vous ?"
+      },
+      {
+        "reference": "REQ-0294",
+        "title": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et qua",
+        "summary": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et quand il sera en ligne ?"
+      },
+      {
+        "reference": "REQ-0010",
+        "title": "Dates au format américain",
+        "summary": "Depuis la mise à jour, les dates s'affichent au format mois/jour/année."
+      },
+      {
+        "reference": "REQ-0287",
+        "title": "Pour compléter ma demande REQ-0012 : le bug arrive aussi sur Firefox, pas seulem",
+        "summary": "Pour compléter ma demande REQ-0012 : le bug arrive aussi sur Firefox, pas seulement sur Chrome. Je vous joins une capture."
+      },
+      {
+        "reference": "REQ-0265",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0270",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Bonjour, quels sont vos horaires d'ouverture du support ?",
+    "candidates": [
+      {
+        "reference": "REQ-0101",
+        "title": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion",
+        "summary": "Bonjour, depuis ce matin le portail client affiche une erreur 500 à la connexion. Plus personne ne peut se connecter."
+      },
+      {
+        "reference": "REQ-0105",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0113",
+        "title": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il",
+        "summary": "Bonjour, la page des commandes fonctionne mais elle est lente à charger quand il y a beaucoup de lignes. Possible de l'accélérer ?"
+      },
+      {
+        "reference": "REQ-0119",
+        "title": "Bonjour, la mise en production prévue le 15 doit être décalée au 22, notre équip",
+        "summary": "Bonjour, la mise en production prévue le 15 doit être décalée au 22, notre équipe ne sera pas prête pour la recette."
+      },
+      {
+        "reference": "REQ-0121",
+        "title": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne t",
+        "summary": "Bonjour, comment est-ce que j'ajoute un nouvel utilisateur dans le CRM ? Je ne trouve pas le menu."
+      },
+      {
+        "reference": "REQ-0124",
+        "title": "quelle est la différence entre un compte admin et un compte gestionnaire dans le",
+        "summary": "quelle est la différence entre un compte admin et un compte gestionnaire dans le portail ?"
+      },
+      {
+        "reference": "REQ-0125",
+        "title": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients su",
+        "summary": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Merci pour la formation de jeudi, c'était très clair.",
+    "candidates": [
+      {
+        "reference": "REQ-0197",
+        "title": "Notre marque change de nom au 1er janvier : merci de remplacer le logo et le nom",
+        "summary": "Notre marque change de nom au 1er janvier : merci de remplacer le logo et le nom dans tout le portail."
+      },
+      {
+        "reference": "REQ-0216",
+        "title": "Merci beaucoup pour votre réactivité, tout fonctionne parfaitement maintenant !",
+        "summary": "Merci beaucoup pour votre réactivité, tout fonctionne parfaitement maintenant !"
+      },
+      {
+        "reference": "REQ-0217",
+        "title": "Bonjour, je serai absent du 3 au 10 août, merci de contacter Paul pour toute urg",
+        "summary": "Bonjour, je serai absent du 3 au 10 août, merci de contacter Paul pour toute urgence."
+      },
+      {
+        "reference": "REQ-0218",
+        "title": "Pouvons-nous décaler notre point hebdomadaire de jeudi à vendredi 10h ?",
+        "summary": "Pouvons-nous décaler notre point hebdomadaire de jeudi à vendredi 10h ?"
+      },
+      {
+        "reference": "REQ-0220",
+        "title": "Bonne année à toute l'équipe et merci pour cette collaboration !",
+        "summary": "Bonne année à toute l'équipe et merci pour cette collaboration !"
+      },
+      {
+        "reference": "REQ-0224",
+        "title": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le ",
+        "summary": "Depuis la mise à jour d'hier, les dates s'affichent au format américain dans le portail."
+      },
+      {
+        "reference": "REQ-0253",
+        "title": "Est-ce que la correction des dates au format américain est déjà en production ?",
+        "summary": "Est-ce que la correction des dates au format américain est déjà en production ?"
+      },
+      {
+        "reference": "REQ-0256",
+        "title": "Parfait, merci à vous !",
+        "summary": "Parfait, merci à vous !"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Pouvez-vous ajouter Marc Dupont comme administrateur du portail ?",
+    "candidates": [
+      {
+        "reference": "REQ-0285",
+        "title": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients su",
+        "summary": "Bonjour, pouvez-vous me rappeler où je télécharge les factures de mes clients sur la boutique ? Merci"
+      },
+      {
+        "reference": "REQ-0294",
+        "title": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et qua",
+        "summary": "Bonjour, pouvez-vous me dire si le changement de TVA a été pris en compte et quand il sera en ligne ?"
+      },
+      {
+        "reference": "REQ-0306",
+        "title": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des pro",
+        "summary": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des produits de côté ?"
+      },
+      {
+        "reference": "REQ-0324",
+        "title": "Notre nouvelle collègue n'a pas reçu son invitation au CRM, pouvez-vous m'expliq",
+        "summary": "Notre nouvelle collègue n'a pas reçu son invitation au CRM, pouvez-vous m'expliquer comment la renvoyer ?"
+      },
+      {
+        "reference": "REQ-0339",
+        "title": "Bonjour, je change de poste le mois prochain, mon successeur sera Marc Dupont.",
+        "summary": "Bonjour, je change de poste le mois prochain, mon successeur sera Marc Dupont."
+      },
+      {
+        "reference": "REQ-0315",
+        "title": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de",
+        "summary": "pour le formulaire de contact, ajouter un champ « société » en plus du nom et de l'email"
+      },
+      {
+        "reference": "REQ-0292",
+        "title": "Est-ce que vous avez une date pour la correction du bouton de validation ?",
+        "summary": "Est-ce que vous avez une date pour la correction du bouton de validation ?"
+      },
+      {
+        "reference": "REQ-0265",
+        "title": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés",
+        "summary": "Bonjour, les emails de confirmation de commande arrivent avec les accents cassés (Ã© à la place de é). Pouvez-vous regarder ?"
+      }
+    ],
+    "sameProblem": []
+  },
+  {
+    "text": "Le bouton d'ajout au panier est mal aligné sur la fiche produit.",
+    "candidates": [
+      {
+        "reference": "REQ-0002",
+        "title": "Panier vidé après ajout d'un produit",
+        "summary": "Le panier se vide quand on ajoute un nouveau produit."
+      },
+      {
+        "reference": "REQ-0104",
+        "title": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus.",
+        "summary": "Depuis la dernière mise à jour, le bouton de validation ne fonctionne plus."
+      },
+      {
+        "reference": "REQ-0146",
+        "title": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des pro",
+        "summary": "Pourriez-vous ajouter une liste de souhaits pour que nos clients mettent des produits de côté ?"
+      },
+      {
+        "reference": "REQ-0110",
+        "title": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produi",
+        "summary": "Bonjour, nous voudrions que les clients puissent laisser des avis sur les produits. Est-ce que vous pouvez ajouter cette fonctionnalité ?"
+      },
+      {
+        "reference": "REQ-0152",
+        "title": "La page produit est correcte, mais on aimerait afficher plus de photos dans la g",
+        "summary": "La page produit est correcte, mais on aimerait afficher plus de photos dans la galerie, 10 au lieu de 4."
+      },
+      {
+        "reference": "REQ-0102",
+        "title": "Le total du panier est faux quand on applique un code promo : il retire la remis",
+        "summary": "Le total du panier est faux quand on applique un code promo : il retire la remise deux fois."
+      },
+      {
+        "reference": "REQ-0106",
+        "title": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos",
+        "summary": "Serait-il possible d'ajouter le paiement en plusieurs fois sur la boutique ? Nos clients le demandent beaucoup."
+      },
+      {
+        "reference": "REQ-0111",
+        "title": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les ",
+        "summary": "La recherche de produits marche bien mais elle pourrait aussi chercher dans les descriptions, pas seulement dans les noms."
+      }
+    ],
+    "sameProblem": []
+  }
+]
