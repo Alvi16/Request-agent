@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model, the agent tools, the classification, the Slack and Email channels, duplicate detection, the recovery of unhandled messages and the web interface of the team are in place. The final demonstration comes next.
+The P0 and P1 scope of the brief is in place: the Slack and Email channels, the agent and its classification, the structured storage with its history, duplicate detection, human validation and the web interface of the team. The two scenarios, Email → Agent → Request and Slack → Agent → Request, are described step by step in [`docs/demo.md`](docs/demo.md).
 
 | Feature                                                       | Priority | Status      |
 | ------------------------------------------------------------- | -------- | ----------- |
@@ -50,7 +50,7 @@ The agent works on requests only through ten typed tools: `identify_contact`, `i
 - The answer to the sender is written by the code from what the tools did, never by the model. A message the agent leaves unhandled is filed for a review, so none is lost.
 - The application connects to the database with the `request_agent_app` role, which cannot delete rows, change the schema or rewrite the history.
 
-The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
+The parts of the system, the path of a message and how to add a channel are described in [`docs/architecture.md`](docs/architecture.md). The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
 
 ## Prerequisites
 
@@ -201,7 +201,13 @@ An address dedicated to a project, such as one forwarded to the agent's mailbox,
 
 ## Usage
 
-Send a message to the agent:
+The demonstration of both scenarios, with the expected results, is in [`docs/demo.md`](docs/demo.md). On the local mail server, a fictitious email can be sent to the agent, and its answer awaited, with:
+
+```bash
+pnpm demo:email
+```
+
+The API of the Mastra server can also be called directly. Send a message to the agent:
 
 ```bash
 curl -X POST http://localhost:4111/api/agents/request-agent/generate \
@@ -213,14 +219,14 @@ The JSON response contains the answer in the `text` field. This route reaches th
 
 ## Tests and code quality
 
-| Command                    | What it checks                                                                                                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm test`                | Tests (Vitest) of every package, one package after the other. The model is simulated, Ollama is not needed. The tests need the database and the local mail server (`pnpm db:up`) and use the separate test database, created automatically |
-| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                                                                                           |
-| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                                                                         |
-| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                                                                           |
-| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                                                                     |
-| `pnpm eval:duplicates`     | Quality of the duplicate check on labeled messages and their candidates, with the real model. Needs Ollama and takes about 15 minutes on a CPU                                                                                             |
+| Command                    | What it checks                                                                                                                                                                                                                                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`                | Tests (Vitest) of every package, one package after the other, including the two demonstration scenarios from the channel to the stored request. The model is simulated, Ollama is not needed. The tests need the database and the local mail server (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                                                                                                                                                                             |
+| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                                                                                                                                                           |
+| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                                                                                                                                                             |
+| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                                                                                                                                                       |
+| `pnpm eval:duplicates`     | Quality of the duplicate check on labeled messages and their candidates, with the real model. Needs Ollama and takes about 15 minutes on a CPU                                                                                                                                                                               |
 
 ## Project structure
 
@@ -236,10 +242,12 @@ Request-agent/
 │   │       └── views/              Pages, rendered on the server, and their labels in French
 │   └── server/                     Mastra server
 │       ├── slack-app-manifest.yaml Settings of the Slack app
+│       ├── scripts/demo-email.ts   Sends a demonstration email and waits for the answer
 │       └── src/
 │           ├── config.ts           Environment variables validation
 │           ├── channel-handler.ts  Database and agent shared by the channel adapters
 │           ├── reliable-handling.ts  Retries, and filing for a person after the last failure
+│           ├── scenarios.test.ts   Email → Agent → Request and Slack → Agent → Request, end to end
 │           ├── email/
 │           │   ├── parse.ts        Reads an email: sender, thread, new text, attachments
 │           │   ├── policy.ts       Verified senders and automatic emails
@@ -296,6 +304,8 @@ Request-agent/
 │       │       └── queries.ts      Find, status, list, search, identify
 │       └── test/                   Test database setup and fixtures, shared with the apps
 ├── docs/
+│   ├── architecture.md             Parts, path of a message, adding a channel
+│   ├── demo.md                     Step-by-step demonstration of both scenarios
 │   ├── agent.md                    How a message is handled, types, review, measured quality
 │   ├── data-model.md               Tables and their columns
 │   └── decisions/                  Technical choices and their reasons
