@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The foundations, the data model, the agent tools, the classification and the Slack channel are in place. The Email channel comes next.
+The foundations, the data model, the agent tools, the classification, and the Slack and Email channels are in place. The P1 features come next: reliability, duplicates, human review and the web interface.
 
 | Feature                                                          | Priority | Status      |
 | ---------------------------------------------------------------- | -------- | ----------- |
@@ -15,7 +15,7 @@ The foundations, the data model, the agent tools, the classification and the Sla
 | Typed tools (create, update, find, list, status, search)         | P0       | Done        |
 | Classification and uncertainty handling                          | P0       | Done        |
 | Slack integration                                                | P0       | Done        |
-| Email integration                                                | P0       | Not started |
+| Email integration                                                | P0       | Done        |
 | Email conversations, duplicates, human validation, web interface | P1       | Not started |
 | Embeddable web widget                                            | P2       | Not planned |
 | Per-project knowledge base and RAG                               | P3       | Not planned |
@@ -25,7 +25,7 @@ The foundations, the data model, the agent tools, the classification and the Sla
 ```mermaid
 flowchart LR
     Slack["Slack<br/>Socket Mode"] --> Handler["Message handler<br/>apps/server"]
-    Email["Email<br/>next stage"] -.-> Handler
+    Email["Email<br/>IMAP and SMTP"] --> Handler
     Handler --> Classifier["Classifier<br/>packages/core"]
     Classifier --> Ollama
     Handler --> Agent[Request agent]
@@ -84,18 +84,25 @@ One file, at the root, configures the whole project. It is created from its temp
 cp .env.example .env
 ```
 
-| Variable                          | Role                                                                                              | Example value                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`               | Password of the `request_agent` database user, used by Docker Compose                             | `change-me`                                                                 |
-| `POSTGRES_PORT`                   | Port of the database on the machine (localhost only)                                              | `5433`                                                                      |
-| `DATABASE_URL`                    | Connection to the development database, as its owner. Used by the migrations and the demo data    | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
-| `APP_DATABASE_URL`                | Connection used by the application, with the restricted `request_agent_app` role                  | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
-| `TEST_DATABASE_URL`               | Connection to the test database. Its name must end with `_test`                                   | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
-| `OLLAMA_BASE_URL`                 | Ollama API endpoint. Must end with `/api`                                                         | `http://127.0.0.1:11434/api`                                                |
-| `OLLAMA_MODEL`                    | Model used by the agent. It must be pulled first                                                  | `ornith:9b`                                                                 |
-| `CLASSIFICATION_REVIEW_THRESHOLD` | Optional. Below this confidence, from 0 to 1, a request waits for a human review                  | `0.8` (default)                                                             |
-| `SLACK_BOT_TOKEN`                 | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack | `xoxb-…`                                                                    |
-| `SLACK_APP_TOKEN`                 | Optional. App-level token with the `connections:write` scope, for Socket Mode                     | `xapp-…`                                                                    |
+| Variable                                                                   | Role                                                                                                                | Example value                                                               |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`                                                        | Password of the `request_agent` database user, used by Docker Compose                                               | `change-me`                                                                 |
+| `POSTGRES_PORT`                                                            | Port of the database on the machine (localhost only)                                                                | `5433`                                                                      |
+| `DATABASE_URL`                                                             | Connection to the development database, as its owner. Used by the migrations and the demo data                      | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
+| `APP_DATABASE_URL`                                                         | Connection used by the application, with the restricted `request_agent_app` role                                    | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
+| `TEST_DATABASE_URL`                                                        | Connection to the test database. Its name must end with `_test`                                                     | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
+| `OLLAMA_BASE_URL`                                                          | Ollama API endpoint. Must end with `/api`                                                                           | `http://127.0.0.1:11434/api`                                                |
+| `OLLAMA_MODEL`                                                             | Model used by the agent. It must be pulled first                                                                    | `ornith:9b`                                                                 |
+| `CLASSIFICATION_REVIEW_THRESHOLD`                                          | Optional. Below this confidence, from 0 to 1, a request waits for a human review                                    | `0.8` (default)                                                             |
+| `SLACK_BOT_TOKEN`                                                          | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack                   | `xoxb-…`                                                                    |
+| `SLACK_APP_TOKEN`                                                          | Optional. App-level token with the `connections:write` scope, for Socket Mode                                       | `xapp-…`                                                                    |
+| `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Servers of the agent's mailbox. Without `EMAIL_IMAP_HOST`, the server runs without email                            | `127.0.0.1`, `3143`, `127.0.0.1`, `3025` (local mail server)                |
+| `EMAIL_USER`, `EMAIL_PASSWORD`                                             | Login and password of the mailbox. On the local mail server, the password is chosen here                            | `agent`, `change-me-mail`                                                   |
+| `EMAIL_ADDRESS`                                                            | Address the agent receives and answers from                                                                         | `agent@requests.example`                                                    |
+| `EMAIL_SECURE`                                                             | `true` to connect with TLS, as real mail servers require. Defaults to `true`                                        | `false` (local mail server)                                                 |
+| `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender | `mx.google.com`                                                             |
+| `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine      | `true`                                                                      |
+| `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server. The tests empty it                                                  | `agent-test`, `change-me-mail-test`                                         |
 
 Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
@@ -105,13 +112,13 @@ The server refuses to start and names the faulty variable when one of them is mi
 
 ## Running
 
-Start the database. The command waits until it is ready:
+Start the database and the local mail server. The command waits until they are started:
 
 ```bash
 pnpm db:up
 ```
 
-Its data is kept in a Docker volume. `pnpm db:down` stops it without deleting the data.
+The database keeps its data in a Docker volume. `pnpm db:down` stops both without deleting it. The local mail server keeps emails in memory only.
 
 Create the tables and the application role, then insert the fictitious demo data. Both commands can be run again safely:
 
@@ -156,6 +163,18 @@ The agent handles mentions, direct messages, and replies in the threads it alrea
 
 A Slack user only gets rights when a contact with their Slack member ID exists in the database (`contacts.slack_user_id`). A channel dedicated to a project is declared in `project_channels`, with the channel ID.
 
+## Connecting email
+
+The agent watches its mailbox over IMAP and answers over SMTP. With the values of `.env.example`, it uses the local mail server started by `pnpm db:up`, with no account to create: start the server with `pnpm dev`, and the log shows `Email adapter listening`.
+
+Any mail client can write to the agent on the local mail server, at `127.0.0.1`, SMTP port `3025` and IMAP port `3143`. It accepts mail for any address, and creates a mailbox for each recipient, whose login and password are its address.
+
+The agent handles each new email, keeps it with its attachments' descriptions, and answers in the same thread, with the request reference in the subject. A reply is attached to its conversation through its `In-Reply-To` and `References` headers, and the history quoted in a reply is not given to the model. Automatic emails, such as out-of-office replies, mailing lists or bounces, are kept but neither handled nor answered, and the answers of the agent are marked `Auto-Submitted: auto-replied`, so robots do not answer each other.
+
+A sender is only verified by the `Authentication-Results` header that the receiving mail server adds, when it shows that DMARC passed for the sender's domain: set `EMAIL_TRUSTED_AUTHSERV_ID` to the name of that server. A sender can write such a header in the email itself, so any other one is ignored. The local mail server adds no such header: without `EMAIL_TRUST_LOCAL_SENDERS=true`, every sender is unverified there, and their requests wait for a review.
+
+An address dedicated to a project, such as one forwarded to the agent's mailbox, is declared in `project_channels`.
+
 ## Usage
 
 Send a message to the agent:
@@ -170,13 +189,13 @@ The JSON response contains the answer in the `text` field. This route reaches th
 
 ## Tests and code quality
 
-| Command                    | What it checks                                                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm test`                | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database (`pnpm db:up`) and use the separate test database, created automatically |
-| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                   |
-| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                 |
-| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                   |
-| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`             |
+| Command                    | What it checks                                                                                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`                | Tests (Vitest). The model is simulated, Ollama is not needed. The tests need the database and the local mail server (`pnpm db:up`) and use the separate test database, created automatically |
+| `pnpm typecheck`           | TypeScript types, in strict mode                                                                                                                                                             |
+| `pnpm lint`                | Lint rules with oxlint, including type-aware rules                                                                                                                                           |
+| `pnpm format:check`        | Formatting with Prettier. `pnpm format` fixes it                                                                                                                                             |
+| `pnpm eval:classification` | Quality of the classifier on labeled messages, with the real model. Needs Ollama and takes 30 to 60 minutes on a CPU, so it is not part of `pnpm test`                                       |
 
 ## Project structure
 
@@ -187,6 +206,13 @@ Request-agent/
 │       ├── slack-app-manifest.yaml Settings of the Slack app
 │       └── src/
 │           ├── config.ts           Environment variables validation
+│           ├── channel-handler.ts  Database and agent shared by the channel adapters
+│           ├── email/
+│           │   ├── parse.ts        Reads an email: sender, thread, new text, attachments
+│           │   ├── policy.ts       Verified senders and automatic emails
+│           │   ├── adapter.ts      Stores, queues and answers emails
+│           │   ├── connect.ts      IMAP and SMTP clients
+│           │   └── start.ts        Starts email with the server when it is configured
 │           ├── slack/
 │           │   ├── events.ts       Which Slack events reach the agent
 │           │   ├── adapter.ts      Stores, queues and answers Slack messages
@@ -233,7 +259,7 @@ Request-agent/
 ├── .github/
 │   └── pull_request_template.md
 ├── .env.example                    Configuration template
-├── compose.yaml                    Local PostgreSQL database
+├── compose.yaml                    Local PostgreSQL database and mail server
 ├── .nvmrc                          Node.js version
 ├── .oxlintrc.json                  Lint rules
 ├── package.json                    Root scripts
@@ -245,8 +271,9 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- Email is not connected yet: it comes at the next stage.
-- Slack messages are handled one at a time, and the queue lives in memory: a message received while the server restarts stays stored, but is not handled again automatically.
+- Slack messages and emails are handled one at a time, and the queue lives in memory: a message received while the server restarts stays stored, but is not handled again automatically.
+- Attached files are described (name, type, size) but their content is not stored.
+- Answers are written in French only.
 - The Mastra server API has no authentication yet. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
 - The local model is slow on a CPU: classifying a message takes from 20 s to 60 s, and the agent adds its own calls. Its classification is measured on 80 fictitious messages only, described in [`docs/agent.md`](docs/agent.md).
