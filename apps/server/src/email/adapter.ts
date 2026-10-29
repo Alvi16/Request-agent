@@ -1,12 +1,17 @@
 import {
   conversationOfMessage,
+  listUnhandledMessages,
+  markHandled,
   type Database,
   storeInboundMessage,
   storeOutboundMessage,
   type TurnInput,
 } from "@request-agent/core";
 
+import { z } from "zod";
+
 import type { HandledMessage } from "../mastra/agents/handle-message";
+import { createSerialQueue, defaultRetryDelaysMs, handleReliably } from "../reliable-handling";
 import { type ParsedEmail, parseEmail } from "./parse";
 import { isAutomatic, senderTrust, type TrustSettings } from "./policy";
 
@@ -44,12 +49,16 @@ export interface EmailAdapterOptions {
   address: string;
   trust: TrustSettings;
   logger: EmailAdapterLogger;
+  // Waits before handling a failed email again, after the first and second failures.
+  retryDelaysMs?: number[];
 }
 
-// Sent when the agent could not handle an email. Nothing retries it yet, so the sender is asked to
-// send it again.
+// Sent when an email could not even be filed for a person, for example when the database is down.
+// The email stays unhandled and is handled again when the server restarts.
 export const unavailableReply =
   "Le service est momentanément indisponible et votre message n'a pas pu être traité. Merci de le renvoyer un peu plus tard.";
+
+const storedSource = z.object({ source: z.string() });
 
 // The thread an email belongs to, named after its first message. A reply that lost its References
 // header is still attached through the message it answers.
@@ -75,11 +84,11 @@ function replySubject(subject: string | null, reply: string): string {
 
 // Connects a mailbox to the agent. Each email is stored before it is marked as read, so a read
 // email is never lost, then handled one at a time, since the model runs on a CPU.
-export function startEmailAdapter(options: EmailAdapterOptions): Promise<{
+export async function startEmailAdapter(options: EmailAdapterOptions): Promise<{
   idle: () => Promise<void>;
 }> {
   const { db, logger } = options;
-  let queue = Promise.resolve();
+  const queue = createSerialQueue();
 
   async function reply(email: ParsedEmail, thread: string, text: string): Promise<void> {
     const sent = await options.sender.send({
@@ -105,14 +114,24 @@ export function startEmailAdapter(options: EmailAdapterOptions): Promise<{
   async function process(email: ParsedEmail, thread: string, messageId: string): Promise<void> {
     const ownAddress = options.address.toLowerCase();
     try {
-      const handled = await options.handle({
-        messageId,
-        trust: senderTrust(email, options.trust),
-        // An address dedicated to a project, such as one forwarded to the agent's mailbox.
-        channelAddress: email.recipients.find((address) => address !== ownAddress) ?? ownAddress,
-      });
-      if (handled.reply !== null) {
-        await reply(email, thread, handled.reply);
+      const outcome = await handleReliably(
+        db,
+        options.handle,
+        {
+          messageId,
+          trust: senderTrust(email, options.trust),
+          // An address dedicated to a project, such as one forwarded to the agent's mailbox.
+          channelAddress: email.recipients.find((address) => address !== ownAddress) ?? ownAddress,
+        },
+        options.retryDelaysMs ?? defaultRetryDelaysMs,
+      );
+      if (outcome.kind === "retry") {
+        logger.error(`Email ${email.messageId} will be handled again`, outcome.error);
+        queue.later(outcome.delayMs, () => process(email, thread, messageId));
+        return;
+      }
+      if (outcome.reply !== null) {
+        await reply(email, thread, outcome.reply);
       }
     } catch (error) {
       logger.error(`Email ${email.messageId} could not be handled`, error);
@@ -134,21 +153,54 @@ export function startEmailAdapter(options: EmailAdapterOptions): Promise<{
       bodyText: email.text,
       // The original email, so the request can always go back to the source.
       raw: {
+        source: Buffer.from(mail.source).toString("base64"),
         headers: email.headers,
         recipients: email.recipients,
-        text: email.fullText,
         attachments: email.attachments,
       },
       sentAt: email.sentAt,
       inReplyTo: email.inReplyTo,
       attachments: email.attachments,
     });
-    // Automatic replies and mailing lists are kept, but neither handled nor answered.
-    if (stored.isNew && !isAutomatic(email, options.address)) {
-      queue = queue.then(() => process(email, thread, stored.messageId));
+    if (stored.isNew) {
+      // Automatic replies and mailing lists are kept, but neither handled nor answered.
+      if (isAutomatic(email, options.address)) {
+        await markHandled(db, stored.messageId);
+      } else {
+        queue.push(() => process(email, thread, stored.messageId));
+      }
     }
     await options.mailbox.markSeen(mail.uid);
   }
+
+  // Emails stored before a restart but never handled are handled first, from their original source.
+  async function recoverUnhandled(): Promise<void> {
+    const unhandled = await listUnhandledMessages(db, "EMAIL");
+    const prepared = await Promise.all(
+      unhandled.map(async (stored) => {
+        const source = storedSource.safeParse(stored.raw);
+        if (!source.success) {
+          // Stored by an earlier version, without its source: it cannot be read again.
+          await markHandled(db, stored.messageId);
+          return undefined;
+        }
+        const email = await parseEmail(Buffer.from(source.data.source, "base64"));
+        return { email, thread: await threadOf(db, email), messageId: stored.messageId };
+      }),
+    );
+    // Queued in their order, oldest first.
+    for (const item of prepared) {
+      if (item !== undefined) {
+        queue.push(() => process(item.email, item.thread, item.messageId));
+      }
+    }
+  }
+
+  // A database that is down at startup does not stop the channel: the messages stay unhandled and
+  // are handled again at the next start.
+  await recoverUnhandled().catch((error: unknown) => {
+    logger.error("Unhandled messages could not be resumed", error);
+  });
 
   return options.mailbox
     .watch(async (mail) => {
@@ -161,6 +213,6 @@ export function startEmailAdapter(options: EmailAdapterOptions): Promise<{
     })
     .then(() => {
       logger.info("Email adapter listening");
-      return { idle: () => queue };
+      return { idle: queue.idle };
     });
 }

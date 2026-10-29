@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { rawEmail } from "../../test/emails";
 import type { HandledMessage } from "../mastra/agents/handle-message";
-import { type OutgoingEmail, startEmailAdapter, unavailableReply } from "./adapter";
+import { type OutgoingEmail, startEmailAdapter } from "./adapter";
 
 const getDatabase = useTestDatabase();
 const getAppDatabase = useAppTestDatabase();
@@ -60,15 +60,21 @@ async function fakeMail(
     address,
     trust: { trustedAuthservId: undefined, trustAllSenders: false },
     logger: { info: () => {}, error: () => {} },
+    // Retries come at once, so the tests do not wait.
+    retryDelaysMs: [1, 1],
   });
 
-  async function receive(options: Mail.Options) {
+  async function deliverOnly(options: Mail.Options) {
     uid += 1;
     await deliver?.({ uid, source: await rawEmail(options) });
-    await adapter.idle();
     return uid;
   }
-  return { receive, seen, sent, handled };
+  async function receive(options: Mail.Options) {
+    const delivered = await deliverOnly(options);
+    await adapter.idle();
+    return delivered;
+  }
+  return { receive, deliverOnly, seen, sent, handled, idle: adapter.idle };
 }
 
 const answered = (reply: string | null) => () => Promise.resolve({ reply, filedBySystem: false });
@@ -155,12 +161,26 @@ describe("startEmailAdapter", () => {
     expect(mail.sent).toHaveLength(0);
   });
 
-  it("tells the sender when the email could not be handled", async () => {
+  it("retries a failing email, then files it for a person and gives its reference", async () => {
     const mail = await fakeMail(() => Promise.reject(new Error("Ollama is down")));
 
     await mail.receive({});
 
-    expect(mail.sent.map((email) => email.text)).toEqual([unavailableReply]);
+    expect(mail.handled).toHaveLength(3);
+    expect(mail.sent.map((email) => email.text)).toEqual([
+      "Votre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
+    ]);
+  });
+
+  it("handles at startup the emails stored before a restart, from their original source", async () => {
+    const first = await fakeMail(() => new Promise(() => {}));
+    await first.deliverOnly({ messageId: "<pending@acme.example>" });
+
+    const restarted = await fakeMail(answered("ok"));
+    await restarted.idle();
+
+    expect(restarted.handled).toHaveLength(1);
+    expect(restarted.sent[0]).toMatchObject({ inReplyTo: "<pending@acme.example>" });
   });
 
   it("leaves an email it could not store unread, so it is read again later", async () => {
