@@ -2,6 +2,7 @@ import type { Agent } from "@mastra/core/agent";
 import {
   connectDatabase,
   createOllamaClassifier,
+  createOllamaDuplicateJudge,
   type Database,
   loadAppDatabaseEnv,
   loadClassifierEnv,
@@ -23,16 +24,19 @@ export interface ChannelHandler {
 export function createChannelHandler(agent: Agent): ChannelHandler {
   const classifierEnv = loadClassifierEnv();
   const { db } = connectDatabase(loadAppDatabaseEnv().APP_DATABASE_URL);
-  const classify = createOllamaClassifier({
+  const ollama = {
     baseUrl: classifierEnv.OLLAMA_BASE_URL,
     model: classifierEnv.OLLAMA_MODEL,
     timeoutMs: classificationTimeoutMs,
-  });
+  };
+  const classify = createOllamaClassifier(ollama);
+  const judgeDuplicate = createOllamaDuplicateJudge(ollama);
   return {
     db,
     handle: (input) =>
       handleMessage(agent, db, input, {
         classify,
+        judgeDuplicate,
         reviewThreshold: classifierEnv.CLASSIFICATION_REVIEW_THRESHOLD,
       }),
   };

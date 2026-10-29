@@ -1,4 +1,4 @@
-import { type Classification, events, requests } from "@request-agent/core";
+import { type Classification, type DuplicateJudge, events, requests } from "@request-agent/core";
 import {
   alice,
   bruno,
@@ -31,10 +31,17 @@ function fixedClassifier(classification: Partial<Classification> = {}) {
   return () => Promise.resolve(base);
 }
 
+// No existing request repeats the message, unless a test says otherwise.
+const noDuplicate = () => Promise.resolve({ reference: null, confidence: 1 });
+
 async function run(
   steps: ScriptedStep[],
   sender: string,
-  options: { trust?: "VERIFIED" | "UNVERIFIED"; classification?: Partial<Classification> } = {},
+  options: {
+    trust?: "VERIFIED" | "UNVERIFIED";
+    classification?: Partial<Classification>;
+    judgeDuplicate?: DuplicateJudge;
+  } = {},
 ) {
   const model = scriptedModel(steps);
   const messageId = await storeMessage(getDatabase(), {
@@ -45,7 +52,11 @@ async function run(
     createRequestAgent(model),
     getAppDatabase(),
     { messageId, trust: options.trust ?? "VERIFIED", channelAddress: null },
-    { classify: fixedClassifier(options.classification), reviewThreshold: testReviewThreshold },
+    {
+      classify: fixedClassifier(options.classification),
+      judgeDuplicate: options.judgeDuplicate ?? noDuplicate,
+      reviewThreshold: testReviewThreshold,
+    },
   );
   return { model, result, messageId };
 }
@@ -69,6 +80,25 @@ describe("handleMessage", () => {
       type: "BUG",
       needsReview: false,
     });
+  });
+
+  it("adds a message that repeats an open request to it, instead of filing a second request", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
+    const candidates: unknown[] = [];
+    const sameProblem: DuplicateJudge = (input) => {
+      candidates.push(input.candidates);
+      return Promise.resolve({ reference: "REQ-0001", confidence: 0.92 });
+    };
+
+    const { result } = await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno, {
+      judgeDuplicate: sameProblem,
+    });
+
+    expect(result.reply).toBe(
+      "Votre message concerne la demande existante REQ-0001 : il y a été ajouté.",
+    );
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
+    expect(candidates).toEqual([[expect.objectContaining({ reference: "REQ-0001" })]]);
   });
 
   it("gives the model the facts computed by the system and the wrapped message", async () => {
@@ -232,7 +262,11 @@ describe("handleMessage", () => {
         createRequestAgent(scriptedModel([{ toolCalls: [{ tool: "create_request", input: {} }] }])),
         getAppDatabase(),
         { messageId, trust: "VERIFIED", channelAddress: null },
-        { classify: () => Promise.reject(new Error("Ollama is down")), reviewThreshold: 0.8 },
+        {
+          classify: () => Promise.reject(new Error("Ollama is down")),
+          judgeDuplicate: noDuplicate,
+          reviewThreshold: 0.8,
+        },
       ),
     ).rejects.toThrow("Ollama is down");
     expect(await getDatabase().select().from(requests)).toHaveLength(0);
