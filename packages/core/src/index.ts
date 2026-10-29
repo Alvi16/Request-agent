@@ -85,6 +85,11 @@ export {
   recordFailedAttempt,
   type UnhandledMessage,
 } from "./messages/handling.ts";
+export {
+  getMailboxCursor,
+  type MailboxCursor,
+  saveMailboxCursor,
+} from "./messages/mailbox-cursor.ts";
 export { assessDuplicate, findDuplicateCandidates } from "./requests/duplicates.ts";
 export {
   listReviewQueue,
