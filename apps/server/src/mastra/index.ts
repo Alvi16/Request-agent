@@ -5,6 +5,7 @@ import { type ChannelHandler, createChannelHandler } from "../channel-handler";
 import { loadEnv } from "../config";
 import { startEmailIfConfigured } from "../email/start";
 import { startSlackIfConfigured } from "../slack/start";
+import { startWidgetIfConfigured, widgetRoutes } from "../widget/start";
 import { createRequestAgent } from "./agents/request-agent";
 
 const env = loadEnv();
@@ -13,6 +14,7 @@ const requestAgent = createRequestAgent(ollama(env.OLLAMA_MODEL));
 
 export const mastra = new Mastra({
   agents: { requestAgent },
+  server: { apiRoutes: widgetRoutes() },
 });
 
 const logger = mastra.getLogger();
@@ -28,6 +30,7 @@ const handler = () => {
 for (const [name, start] of [
   ["Slack", startSlackIfConfigured],
   ["Email", startEmailIfConfigured],
+  ["Widget", startWidgetIfConfigured],
 ] as const) {
   start(handler, logger).catch((error: unknown) => {
     logger.error(`${name} could not be started`, {
