@@ -130,7 +130,7 @@ button.primary { color: #ffffff; background: var(--primary); border-color: var(-
 button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(124, 93, 250, 0.4); }
 
-/* Sign-in: neon arcs behind a dark glass card. After the generic form rules, which would
+/* Sign-in: neon arcs behind a large dark glass card. After the generic form rules, which would
    otherwise win over these ones. */
 body:has(.sign-in) {
   min-height: 100vh;
@@ -151,33 +151,33 @@ body:has(.sign-in)::before, body:has(.sign-in)::after {
   border-radius: 50%;
   pointer-events: none;
 }
-/* Large arc, top right. */
+/* Arc, top right. */
 body:has(.sign-in)::before {
-  width: 700px;
-  height: 700px;
-  top: -250px;
-  right: -100px;
+  width: 850px;
+  height: 850px;
+  top: -300px;
+  right: -120px;
   border: 4px solid #1e6fff;
   box-shadow:
-    0 0 20px #0055ff,
-    inset 0 0 15px #0055ff,
-    0 0 50px rgba(0, 85, 255, 0.4);
+    0 0 25px #0055ff,
+    inset 0 0 20px #0055ff,
+    0 0 60px rgba(0, 85, 255, 0.45);
   background: radial-gradient(circle at 30% 30%, rgba(10, 20, 60, 0.6), transparent 70%);
-  filter: drop-shadow(0 0 12px #0066ff);
+  filter: drop-shadow(0 0 15px #0066ff);
 }
 /* Arc, bottom left. */
 body:has(.sign-in)::after {
-  width: 650px;
-  height: 650px;
-  bottom: -220px;
-  left: -80px;
+  width: 800px;
+  height: 800px;
+  bottom: -280px;
+  left: -100px;
   border: 4px solid #0055ff;
   box-shadow:
-    0 0 20px #0044cc,
-    inset 0 0 15px #0044cc,
-    0 0 50px rgba(0, 68, 204, 0.4);
+    0 0 25px #0044cc,
+    inset 0 0 20px #0044cc,
+    0 0 60px rgba(0, 68, 204, 0.45);
   background: radial-gradient(circle at 70% 70%, rgba(10, 20, 50, 0.5), transparent 70%);
-  filter: drop-shadow(0 0 10px #0055ff);
+  filter: drop-shadow(0 0 12px #0055ff);
 }
 /* No sidebar on this page: the content is centered, above the arcs. */
 body:has(.sign-in) main {
@@ -185,7 +185,7 @@ body:has(.sign-in) main {
   z-index: 10;
   flex: 0 1 auto;
   width: 100%;
-  max-width: 412px;
+  max-width: 512px;
   margin: 0;
   padding: 16px;
 }
@@ -193,59 +193,65 @@ body:has(.sign-in) main {
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 380px;
-  padding: 40px 32px;
-  background: rgba(8, 12, 28, 0.55) !important;
-  backdrop-filter: blur(20px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  max-width: 480px !important;
+  padding: 52px 44px !important;
+  background: rgba(8, 12, 28, 0.6) !important;
+  backdrop-filter: blur(25px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  box-sizing: border-box;
 }
 .sign-in h1 {
   color: #ffffff;
-  font-size: 26px;
+  font-size: 28px !important;
   font-weight: 600;
-  margin-bottom: 28px;
+  margin-bottom: 32px !important;
   text-align: center;
+  letter-spacing: -0.5px;
 }
-/* The fields sit inside their labels, which the centered card would otherwise shrink. */
-.sign-in label { width: 100%; }
+/* Each field sits inside its label: the 6px gap of the labels keeps the text above the field. */
+.sign-in label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+}
 .sign-in input[type="email"],
 .sign-in input[type="password"] {
   width: 100%;
-  background: rgba(10, 15, 35, 0.6) !important;
-  border: 1px solid rgba(0, 102, 255, 0.35) !important;
+  height: 48px !important;
+  background: rgba(10, 15, 35, 0.7) !important;
+  border: 1px solid rgba(0, 102, 255, 0.4) !important;
   color: #ffffff !important;
-  padding: 12px 20px;
+  padding: 0 22px !important;
   border-radius: 30px !important;
-  margin-bottom: 16px;
-  font-size: 14px;
+  margin-bottom: 20px !important;
+  font-size: 15px !important;
   box-sizing: border-box;
   outline: none;
   transition: all 0.2s ease;
 }
 .sign-in input:focus {
   border-color: #0066ff !important;
-  box-shadow: 0 0 10px rgba(0, 102, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 102, 255, 0.5);
 }
 .sign-in button {
   width: 100%;
+  height: 48px !important;
   background: #ffffff !important;
   color: #080c1c !important;
-  font-size: 15px;
+  font-size: 16px !important;
   font-weight: 600;
-  padding: 12px;
   border: none;
   border-radius: 30px !important;
   cursor: pointer;
-  margin-top: 16px;
+  margin-top: 12px !important;
   transition: transform 0.1s ease, background 0.2s ease;
 }
-.sign-in button:hover { background: #e6e6e6 !important; }
+.sign-in button:hover { background: #f0f0f0 !important; }
 
 /* Filters: a dark card above the table. */
 .filters {
