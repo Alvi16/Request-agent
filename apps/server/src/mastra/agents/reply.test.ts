@@ -66,6 +66,20 @@ describe("composeReply", () => {
     );
   });
 
+  it("says which question was passed to the team, under which request", () => {
+    const outcomes: ToolOutcome[] = [
+      {
+        tool: "forward_to_team",
+        question: "Quand est-ce prévu ?",
+        result: { ok: true, value: request },
+      },
+    ];
+
+    expect(composeReply(outcomes, undefined)).toBe(
+      "Votre question est transmise à l'équipe, sous la référence REQ-0007 : « Quand est-ce prévu ? »",
+    );
+  });
+
   it("falls back to a neutral answer when nothing succeeded", () => {
     const outcomes: ToolOutcome[] = [
       { tool: "find_request", result: { ok: false, error: "NOT_FOUND" } },

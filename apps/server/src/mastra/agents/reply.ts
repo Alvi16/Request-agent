@@ -80,8 +80,13 @@ function describeOutcome(outcome: ToolOutcome): string | undefined {
       break;
     }
     case "list_project_requests":
+    case "list_my_requests":
     case "search_requests": {
       answer = listed(outcome.result.value);
+      break;
+    }
+    case "forward_to_team": {
+      answer = `Votre question est transmise à l'équipe, sous la référence ${outcome.result.value.reference} : « ${outcome.question} »`;
       break;
     }
   }

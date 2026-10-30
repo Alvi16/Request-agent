@@ -115,6 +115,23 @@ describe("handleMessage", () => {
     expect(JSON.stringify(prompt)).toContain("<message>\\nLe portail ne répond plus.\\n</message>");
   });
 
+  it("gives the model the results of the tools in plain words, without the codes", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
+
+    const { model } = await run(
+      [
+        { toolCalls: [{ tool: "get_request_status", input: { reference: "REQ-0001" } }] },
+        { text: "Elle est nouvelle." },
+      ],
+      bruno,
+      { classification: { type: "STATUS_REQUEST" } },
+    );
+
+    const toolResults = JSON.stringify(model.doGenerateCalls[1]?.prompt.at(-1));
+    expect(toolResults).toContain("new: no one of the team has started on it yet");
+    expect(toolResults).not.toContain('"NEW"');
+  });
+
   it("turns off the thinking mode of the model", async () => {
     const { model } = await run([{ text: "Bonjour" }], bruno);
 
@@ -128,9 +145,11 @@ describe("handleMessage", () => {
       "add_message_to_request",
       "create_request",
       "find_request",
+      "forward_to_team",
       "get_request_status",
       "identify_contact",
       "identify_project",
+      "list_my_requests",
       "list_project_requests",
       "request_clarification",
       "search_requests",
