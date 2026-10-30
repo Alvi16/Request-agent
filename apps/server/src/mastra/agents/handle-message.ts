@@ -158,6 +158,17 @@ function finalReply(
     : `${answer}\n\n${filedForReviewReply(filedBySystem.reference)}`;
 }
 
+// The answer is the text of the last step, which ended the run without calling a tool and which
+// the answer check read. Text the model wrote next to its tool calls is not an answer: it can
+// think aloud there, and it would repeat itself.
+function finalAnswer(result: Awaited<ReturnType<Agent["generate"]>>): string {
+  const last = result.steps.at(-1);
+  if (result.finishReason === "tripwire" || last === undefined || last.toolCalls.length > 0) {
+    return "";
+  }
+  return toPlainText(last.text);
+}
+
 // Runs the agent on one stored message, with tools bound to what its verified sender may do. The
 // message is classified first: if the classification fails, nothing has been written. The model
 // writes the answer, which code checks before it is sent; when no answer passes the check, the
@@ -186,7 +197,7 @@ export async function handleMessage(
     maxProcessorRetries: maxAnswerRetries,
   });
 
-  const answer = result.finishReason === "tripwire" ? "" : toPlainText(result.text);
+  const answer = finalAnswer(result);
   let filed = await isMessageFiled(db, turn.messageId);
   if (!filed) {
     const kept = await keepFollowUp(db, turn);

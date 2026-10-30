@@ -281,6 +281,23 @@ describe("handleMessage", () => {
     expect(result).toEqual({ reply: answer, filedBySystem: false });
   });
 
+  it("sends only the final answer, not the text the model wrote next to its tool calls", async () => {
+    const answer = "Votre demande est enregistrée sous la référence REQ-0001.";
+
+    const { result } = await run(
+      [
+        {
+          text: "Je crée la demande, statut NEW.",
+          toolCalls: [{ tool: "create_request", input: {} }],
+        },
+        { text: answer },
+      ],
+      bruno,
+    );
+
+    expect(result.reply).toBe(answer);
+  });
+
   it("falls back to the answer written by code when no answer of the model can be sent", async () => {
     await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
 
