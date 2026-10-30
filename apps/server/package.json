@@ -18,6 +18,7 @@
     "@slack/socket-mode": "catalog:",
     "@slack/web-api": "catalog:",
     "email-reply-parser": "catalog:",
+    "hono": "catalog:",
     "imapflow": "catalog:",
     "nodemailer": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
