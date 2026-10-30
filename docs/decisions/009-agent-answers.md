@@ -27,14 +27,15 @@ Until now, the answer to the sender was written by code from what the tools did,
 
 ## What the check refuses
 
-| Refused                                                           | Example measured with `ornith:9b`                                                                                          |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| A request that no tool returned and that the message did not name | A reference made up by the model                                                                                           |
-| Codes, tool names and the words of the instructions               | "statut : new", "dans les faits que je possède", "the facts do not hold"                                                   |
-| Promises that nobody keeps                                        | "Vous serez informé", "Ils examineront la demande et procéderont à la clôture", "La priorité sera mise à jour en critique" |
-| Saying the question was passed to the team when it was not        | "Je transmets votre question" without a call to `forward_to_team`                                                          |
-| Saying "tu" to the sender                                         | "Ils te diront qui est en charge"                                                                                          |
-| An empty answer, or one longer than 3000 characters               |                                                                                                                            |
+| Refused                                                                       | Example measured with `ornith:9b`                                                                                          |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| A request that no tool returned and that the message did not name             | A reference made up by the model                                                                                           |
+| Codes, tool names and the words of the instructions                           | "statut : new", "dans les faits que je possède", "the facts do not hold"                                                   |
+| Promises that nobody keeps                                                    | "Vous serez informé", "Ils examineront la demande et procéderont à la clôture", "La priorité sera mise à jour en critique" |
+| Saying the question was passed to the team when it was not                    | "Je transmets votre question" without a call to `forward_to_team`                                                          |
+| Saying "tu" to the sender                                                     | "Ils te diront qui est en charge"                                                                                          |
+| A title such as Madame or Monsieur, which assumes how the sender is addressed | "Madame De Souza, je ne trouve pas de demande liée à votre message", in the real Gmail test                                |
+| An empty answer, or one longer than 3000 characters                           |                                                                                                                            |
 
 The rules were checked on every real answer collected during the measures: they rejected the faulty ones and none of the right ones. Word boundaries take letters with accents into account, so that "requête" does not hold the word "te".
 
@@ -42,7 +43,7 @@ The rules were checked on every real answer collected during the measures: they 
 
 - A follow-up (`FOLLOW_UP`, `STATUS_REQUEST`) that the model answered without adding it to its request is added by code to the request of its conversation.
 - A question passed to the team goes to the request the model names, which the sender must be able to reach, or to the request of the conversation for a follow-up. A new question, such as "Comment ajouter un utilisateur ?", gets its own request.
-- A message still filed under no request at the end is filed for a person, as before. Before, a message for which the model had only looked up requests was considered handled and was never filed.
+- A message still filed under no request at the end is filed for a person, as before, unless it only asked a question (`STATUS_REQUEST` or `OTHER`) that got its answer: "Quelles demandes ai-je en cours ?" needs no request of its own. Before, a message for which the model had only looked up requests was considered handled and was never filed.
 - A clarification question is sent as it is, as before.
 - A question classified `OTHER`, such as "Travaillez-vous le samedi ?", is now answered. Thanks and other messages without a question still get no answer, which avoids loops of automatic replies.
 
