@@ -412,6 +412,28 @@ describe("forwardToTeam", () => {
     ).toEqual(["MESSAGE_ADDED", "REVIEW_REQUESTED"]);
   });
 
+  it("passes a question to the request it names, which the sender must be able to reach", async () => {
+    const portal = await createdReference(bruno, { projectKey: "PORTAL" });
+    const shop = await createdReference(alice, { projectKey: "SHOP" });
+    const question = await turnFor(bruno, {
+      text: "Qui s'en occupe ?",
+      classification: { type: "SUPPORT" },
+    });
+
+    const hidden = await forwardToTeam(getAppDatabase(), question, {
+      question: "Qui s'en occupe ?",
+      reference: shop,
+    });
+    const named = await forwardToTeam(getAppDatabase(), question, {
+      question: "Qui s'en occupe ?",
+      reference: portal,
+    });
+
+    expect(hidden).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(named).toMatchObject({ ok: true, value: { reference: portal } });
+    expect(await getDatabase().select().from(requests)).toHaveLength(2);
+  });
+
   it("files a new question asked in a known conversation as its own request", async () => {
     await createRequest(getAppDatabase(), await turnFor(bruno, { thread: "t-2" }), {});
     const question = await turnFor(bruno, {

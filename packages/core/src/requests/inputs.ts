@@ -38,6 +38,9 @@ export const forwardToTeamInput = z.object({
     .min(1)
     .max(500)
     .describe("The question or wish of the sender, as the team should read it"),
+  reference: reference
+    .optional()
+    .describe("The request the question is about. Leave it out for a question about no request"),
 });
 
 export const updateRequestInput = z.object({

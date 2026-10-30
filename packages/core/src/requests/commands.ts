@@ -325,44 +325,53 @@ const followUpTypes = new Set<ClassifiedTurn["classification"]["type"]>([
 ]);
 
 // The request a message without one belongs to, for the question it passes to the team: the
-// request of its conversation when it follows up on it, or else a new request filed for it.
+// request it names, the request of its conversation when it follows up on it, or else a new
+// request filed for it. Undefined when it names a request the sender cannot reach.
 async function requestForQuestion(
   tx: Transaction,
   turn: ClassifiedTurn,
   message: TurnMessage,
-): Promise<string> {
-  const conversationRequestId = followUpTypes.has(turn.classification.type)
-    ? await findConversationRequestId(tx, turn)
-    : undefined;
-  if (conversationRequestId === undefined) {
+  reference: string | undefined,
+): Promise<string | undefined> {
+  let existingId: string | undefined;
+  if (reference !== undefined) {
+    existingId = (await lockVisibleRequest(tx, turn, reference))?.id;
+    if (existingId === undefined) {
+      return undefined;
+    }
+  } else if (followUpTypes.has(turn.classification.type)) {
+    existingId = await findConversationRequestId(tx, turn);
+  }
+  if (existingId === undefined) {
     const project = turn.project.status === "identified" ? turn.project.projectId : null;
     return insertRequest(tx, turn, message, project, "NEW", ["QUESTION_FOR_TEAM"]);
   }
-  await tx
-    .update(messages)
-    .set({ requestId: conversationRequestId })
-    .where(eq(messages.id, message.id));
+  await tx.update(messages).set({ requestId: existingId }).where(eq(messages.id, message.id));
   await tx.insert(events).values({
-    requestId: conversationRequestId,
+    requestId: existingId,
     type: "MESSAGE_ADDED",
     actorType: "AGENT",
     channel: message.channel,
     messageId: message.id,
   });
-  return conversationRequestId;
+  return existingId;
 }
 
 // Passes a question or a wish of the sender that the agent cannot answer to the team: on the
-// request of the message, or of its conversation, or on a new request filed for it. The request
-// waits for a person, who sees the question in its history.
+// request of the message, the request it is about, the request of its conversation, or a new
+// request filed for it. The request waits for a person, who sees the question in its history.
 export function forwardToTeam(
   db: Database,
   turn: ClassifiedTurn,
   input: ForwardToTeamInput,
-): Promise<Result<RequestView, never>> {
+): Promise<Result<RequestView, "NOT_FOUND">> {
   return db.transaction(async (tx) => {
     const message = await lockTurnMessage(tx, turn);
-    const requestId = message.requestId ?? (await requestForQuestion(tx, turn, message));
+    const requestId =
+      message.requestId ?? (await requestForQuestion(tx, turn, message, input.reference));
+    if (requestId === undefined) {
+      return fail("NOT_FOUND");
+    }
     await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
     await tx.insert(events).values({
       requestId,
