@@ -130,8 +130,8 @@ button.primary { color: #ffffff; background: var(--primary); border-color: var(-
 button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(124, 93, 250, 0.4); }
 
-/* Sign-in: a large frosted glass card over dark 3D spheres, drawn in CSS. After the generic
-   form rules, which would otherwise win over these ones. */
+/* Sign-in: a frosted glass card over glass spheres drawn in an SVG data URI, which the content
+   security policy allows as an image. After the generic form rules, which would otherwise win. */
 body:has(.sign-in) {
   min-height: 100vh;
   width: 100vw;
@@ -139,9 +139,12 @@ body:has(.sign-in) {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #08080a;
+  background-color: #060608 !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><radialGradient id="g1" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="%23888899" stop-opacity="0.8"/><stop offset="40%" stop-color="%2322222b" stop-opacity="0.9"/><stop offset="100%" stop-color="%2308080a" stop-opacity="0.95"/></radialGradient><radialGradient id="g2" cx="30%" cy="25%" r="70%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.4"/><stop offset="25%" stop-color="%23444455" stop-opacity="0.6"/><stop offset="80%" stop-color="%230f0f14" stop-opacity="0.95"/></radialGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="720" cy="380" r="180" fill="url(%23g1)"/><circle cx="720" cy="380" r="179" fill="none" stroke="%23ffffff" stroke-opacity="0.25" stroke-width="1.5"/><circle cx="440" cy="520" r="130" fill="url(%23g2)"/><circle cx="440" cy="520" r="129" fill="none" stroke="%23ffffff" stroke-opacity="0.2" stroke-width="1"/><circle cx="380" cy="280" r="70" fill="url(%23g1)" opacity="0.8"/><circle cx="780" cy="180" r="45" fill="url(%23g2)" opacity="0.7"/><circle cx="330" cy="390" r="22" fill="url(%23g2)" opacity="0.9"/></svg>');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
   position: relative;
-  overflow: hidden;
 }
 /* No sidebar on this page: the content is centered, above the spheres. */
 body:has(.sign-in) main {
@@ -149,7 +152,7 @@ body:has(.sign-in) main {
   z-index: 10;
   flex: 0 1 auto;
   width: 100%;
-  max-width: 512px;
+  max-width: 472px;
   margin: 0;
   padding: 16px;
 }
@@ -157,14 +160,14 @@ body:has(.sign-in) main {
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 480px;
-  padding: 48px 40px;
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 4px !important;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  max-width: 440px;
+  padding: 44px 36px;
+  background: rgba(18, 18, 26, 0.45) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 .sign-in h1 {
   font-size: 22px;
@@ -194,37 +197,6 @@ body:has(.sign-in) main {
   cursor: pointer;
   margin-top: 10px;
 }
-body:has(.sign-in)::before, body:has(.sign-in)::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  z-index: 1;
-}
-/* Large sphere, on the right. */
-body:has(.sign-in)::before {
-  width: 380px;
-  height: 380px;
-  right: 22%;
-  top: 25%;
-  background: radial-gradient(circle at 35% 25%, #44444a 0%, #151518 50%, #050506 100%);
-  box-shadow:
-    inset -15px -15px 30px rgba(0, 0, 0, 0.9),
-    inset 10px 10px 20px rgba(255, 255, 255, 0.25),
-    0 20px 50px rgba(0, 0, 0, 0.8);
-}
-/* Smaller sphere, bottom left. */
-body:has(.sign-in)::after {
-  width: 260px;
-  height: 260px;
-  left: 25%;
-  bottom: 18%;
-  background: radial-gradient(circle at 35% 25%, #3a3a40 0%, #111114 50%, #020203 100%);
-  box-shadow:
-    inset -12px -12px 25px rgba(0, 0, 0, 0.95),
-    inset 8px 8px 15px rgba(255, 255, 255, 0.2),
-    0 15px 40px rgba(0, 0, 0, 0.9);
-}
-
 /* Filters: a dark card above the table. */
 .filters {
   display: flex;

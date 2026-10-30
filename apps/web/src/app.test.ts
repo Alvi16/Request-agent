@@ -288,6 +288,8 @@ describe("pages", () => {
 
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    // Images only from the site or inline data, such as the SVG background of the sign-in page.
+    expect(response.headers.get("content-security-policy")).toContain("img-src 'self' data:");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   });
