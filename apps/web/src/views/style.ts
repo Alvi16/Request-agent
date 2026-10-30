@@ -301,6 +301,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
   background: var(--bg-app);
 }
 .history .muted { margin-top: 2px; font-size: 12px; }
+.attachments { margin: 4px 0 0; padding-left: 18px; }
 
 /* Narrower screens: with the sidebar, the request page has room for one column only. */
 @media (max-width: 1200px) {

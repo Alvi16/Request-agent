@@ -1,9 +1,15 @@
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import {
   addMessageToRequest,
+  attachments,
   createRequest,
   fileUnhandledMessage,
   forwardToTeam,
   getRequestRecord,
+  messages,
   prepareTurn,
   saveStaffAccount,
   unclassifiedTurn,
@@ -415,5 +421,81 @@ describe("actions", () => {
     const response = await post(`/requests/${reference}/status`, { status: "DONE" }, { cookie });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("attachments", () => {
+  const storageRef = "0b4c1f9e-5c43-4c1d-9d8e-2f3a4b5c6d7e";
+
+  // A request whose first message carries a file stored by the widget, and one only described.
+  async function requestWithFiles() {
+    const reference = await portalRequest("Le bouton Valider ne répond plus.");
+    const [message] = await getDatabase().select({ id: messages.id }).from(messages);
+    const [stored, described] = await getDatabase()
+      .insert(attachments)
+      .values([
+        {
+          messageId: message?.id ?? "",
+          filename: "capture écran.png",
+          contentType: "image/png",
+          sizeBytes: 4,
+          storageRef,
+        },
+        {
+          messageId: message?.id ?? "",
+          filename: "devis.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 9,
+        },
+      ])
+      .returning({ id: attachments.id });
+    const folder = await mkdtemp(join(tmpdir(), "attachments-"));
+    await writeFile(join(folder, storageRef), "PNG!");
+    return { reference, folder, stored: stored?.id ?? "", described: described?.id ?? "" };
+  }
+
+  it("lets the team download a stored file, and links it from the request", async () => {
+    const files = await requestWithFiles();
+    app = createWebApp({
+      db: getAppDatabase(),
+      timeZone: "Europe/Paris",
+      attachmentsDir: files.folder,
+    });
+    const cookie = await signIn();
+
+    const response = await app.request(`/attachments/${files.stored}`, { headers: { cookie } });
+    const page = await (
+      await app.request(`/requests/${files.reference}`, { headers: { cookie } })
+    ).text();
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("PNG!");
+    expect(response.headers.get("content-type")).toBe("image/png");
+    expect(response.headers.get("content-disposition")).toBe(
+      `attachment; filename="capture _cran.png"; filename*=UTF-8''capture%20%C3%A9cran.png`,
+    );
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(page).toContain(`<a href="/attachments/${files.stored}">capture écran.png</a>`);
+    expect(page).not.toContain(`href="/attachments/${files.described}"`);
+  });
+
+  it("finds no file without a session, for a file only described, or without the folder", async () => {
+    const files = await requestWithFiles();
+    app = createWebApp({
+      db: getAppDatabase(),
+      timeZone: "Europe/Paris",
+      attachmentsDir: files.folder,
+    });
+    const cookie = await signIn();
+
+    expect((await app.request(`/attachments/${files.stored}`)).status).toBe(303);
+    expect(
+      (await app.request(`/attachments/${files.described}`, { headers: { cookie } })).status,
+    ).toBe(404);
+    expect((await app.request("/attachments/not-an-id", { headers: { cookie } })).status).toBe(404);
+    app = createWebApp({ db: getAppDatabase(), timeZone: "Europe/Paris" });
+    expect(
+      (await app.request(`/attachments/${files.stored}`, { headers: { cookie } })).status,
+    ).toBe(404);
   });
 });

@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import {
   authenticateStaff,
   changeRequestStatus,
@@ -6,6 +9,7 @@ import {
   type Database,
   findSession,
   getRequestRecord,
+  getStoredAttachment,
   listProjects,
   listRequests,
   listRequestsInput,
@@ -22,6 +26,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { csrf } from "hono/csrf";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
+import { z } from "zod";
 
 import { createSignInLimiter, type SignInLimiter } from "./sign-in-limiter.ts";
 import { dateFormatter } from "./views/labels.ts";
@@ -38,6 +43,8 @@ export interface WebAppOptions {
   limiter?: SignInLimiter;
   // Called when a request fails unexpectedly, so the error is logged without being shown.
   onError?: (error: Error) => void;
+  // Folder where the widget writes the files people attach. Without it, no file is downloaded.
+  attachmentsDir?: string;
 }
 
 type Env = { Variables: { staff: StaffMember; sessionToken: string } };
@@ -47,6 +54,29 @@ const invalidCredentials = "E-mail ou mot de passe incorrect.";
 const tooManyAttempts = "Trop de tentatives. Réessayez dans 15 minutes.";
 
 const isNotice = (value: string): value is Notice => Object.hasOwn(notices, value);
+
+// Files are written by the widget under random UUIDs, so a stored name is never a path.
+const storageRef = z.uuid();
+
+// A file name for the download, readable by every browser (RFC 6266 and RFC 8187).
+function contentDisposition(filename: string): string {
+  const ascii = filename.replaceAll(/[^\x20-\x7e]|["\\]/g, "_");
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+// The content of a stored file, or undefined when it is missing or files are not kept.
+async function readStoredFile(
+  folder: string | undefined,
+  ref: string,
+): Promise<Uint8Array<ArrayBuffer> | undefined> {
+  if (folder === undefined || !storageRef.safeParse(ref).success) {
+    return undefined;
+  }
+  return readFile(join(folder, ref)).then(
+    (buffer) => new Uint8Array(buffer),
+    () => undefined,
+  );
+}
 
 // Empty form fields leave a value unchanged.
 function formValue(form: Record<string, unknown>, name: string): string | undefined {
@@ -175,6 +205,25 @@ export function createWebApp(options: WebAppOptions) {
     const notice = c.req.query("done");
     return showRequest(c, {
       notice: notice !== undefined && isNotice(notice) ? notice : undefined,
+    });
+  });
+
+  // A file attached through the widget. It is always downloaded, never shown in a page of the
+  // interface, so a file written by a sender cannot run in it.
+  app.get("/attachments/:id", async (c) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    const file = id.success ? await getStoredAttachment(db, id.data) : undefined;
+    const content =
+      file === undefined
+        ? undefined
+        : await readStoredFile(options.attachmentsDir, file.storageRef);
+    if (file === undefined || content === undefined) {
+      return c.text("File not found", 404);
+    }
+    return c.body(content, 200, {
+      "Content-Type": file.contentType,
+      "Content-Disposition": contentDisposition(file.filename),
+      "Cache-Control": "no-store",
     });
   });
 
