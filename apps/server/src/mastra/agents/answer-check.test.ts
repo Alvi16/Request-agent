@@ -11,7 +11,11 @@ import {
   toPlainText,
 } from "./answer-check";
 
-const context: AnswerContext = { knownReferences: new Set([6]), forwarded: false };
+const context: AnswerContext = {
+  knownReferences: new Set([6]),
+  forwarded: false,
+  inProgress: false,
+};
 
 describe("answerProblems", () => {
   it("accepts a plain answer about a request the tools returned", () => {
@@ -43,7 +47,7 @@ describe("answerProblems", () => {
       "D'après les faits fournis, elle est nouvelle.",
       "Je ne trouve rien dans les faits concernant l'administration.",
       "The facts do not say.",
-      "Elle est en cours de traitement (statut : new).",
+      "Elle est nouvelle (statut : new).",
       "<message>",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
@@ -69,6 +73,8 @@ describe("answerProblems", () => {
       "Nous procéderons à la clôture.",
       "La priorité sera mise à jour en critique par l'équipe.",
       "Ils lui diront qui s'en occupe.",
+      "Elle est notée par l'équipe, qui vous répondra.",
+      "Celle-ci procédera à la clôture.",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
     }
@@ -87,6 +93,14 @@ describe("answerProblems", () => {
   it("refuses to say tu to the sender", () => {
     expect(answerProblems("Voici ta demande REQ-0006.", context)).toHaveLength(1);
     expect(answerProblems("Je t'indique le statut.", context)).toHaveLength(1);
+  });
+
+  it("refuses to say a request is being handled unless a request is in progress", () => {
+    const answer = "La demande REQ-0006 est en cours de traitement.";
+
+    expect(answerProblems(answer, context)).toHaveLength(1);
+    expect(answerProblems(answer, { ...context, inProgress: true })).toEqual([]);
+    expect(answerProblems("Vous n'avez aucune demande ouverte.", context)).toEqual([]);
   });
 
   it("refuses a title such as Madame or Monsieur, which assumes how the sender is addressed", () => {

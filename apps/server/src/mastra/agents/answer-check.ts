@@ -12,6 +12,8 @@ export interface AnswerContext {
   knownReferences: Set<number>;
   // True when the question of the sender was really passed to the team.
   forwarded: boolean;
+  // True when a request the model was told about is in progress.
+  inProgress: boolean;
 }
 
 // Longest answer sent, so a model that loops on its text cannot flood a thread.
@@ -55,7 +57,7 @@ const promises = [
   /\b(we|I)'ll\b/i,
   /\bthe team will\b/i,
   // Anything the team or the agent "will" do, in the future tense: "ils examineront".
-  /\b(l'équipe|ils|elles|nous|on)\s+(vous\s+|te\s+|t'|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
+  /(?<!\p{L})(l'équipe|ils|elles|nous|on|qui|celle-ci|celui-ci|ceux-ci)\s+(vous\s+|te\s+|t'|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
   // A change announced as certain: "la priorité sera mise à jour".
   /\b(sera|seront)\s+(\p{L}+\s+)?(mise?s?|modifiée?s?|changée?s?|fermée?s?|clôturée?s?|corrigée?s?|résolue?s?|traitée?s?|examinée?s?)\b/iu,
 ];
@@ -73,6 +75,10 @@ const informalAddress = /(?<!\p{L})(tu|te|ta|ton|tes|toi)(?!\p{L})|(?<!\p{L})t'/
 
 // The system does not know how a sender wants to be addressed, so no title is used.
 const courtesyTitle = /(?<!\p{L})(Madame|Monsieur|Mademoiselle|Mme|Mlle)(?!\p{L})|(?<!\p{L})M\.\s/u;
+
+// A new request is often described as "en cours", which the sender reads as handled.
+const inProgressClaim =
+  /\ben cours de traitement\b|\b(est|sont) (toujours )?en cours\b|\bin progress\b/i;
 
 function unknownReferences(text: string, known: Set<number>): string[] {
   return Array.from(text.matchAll(/REQ-\d{1,9}/gi), (match) => match[0].toUpperCase()).filter(
@@ -117,6 +123,11 @@ export function answerProblems(text: string, context: AnswerContext): string[] {
   }
   if (informalAddress.test(answer)) {
     problems.push('It says "tu" to the sender. Address the sender with "vous".');
+  }
+  if (!context.inProgress && inProgressClaim.test(answer)) {
+    problems.push(
+      "It says a request is being handled, but no request the tools returned is in progress. Give the status the tools gave.",
+    );
   }
   if (courtesyTitle.test(answer)) {
     problems.push("It uses a title such as Madame or Monsieur. Use no title for the sender.");
