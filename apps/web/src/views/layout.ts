@@ -29,6 +29,7 @@ export function page(
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>${title} · Demandes</title>
         <link rel="stylesheet" href="/app.css" />
+        <script src="/app.js" defer></script>
       </head>
       <body>
         ${

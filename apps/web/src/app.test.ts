@@ -281,19 +281,24 @@ describe("pages", () => {
     expect((await app.request("/requests/nothing", { headers: { cookie } })).status).toBe(404);
   });
 
-  it("forbids scripts, framing and caching of pages", async () => {
+  it("forbids scripts of other sites, framing and caching of pages", async () => {
     const cookie = await signIn();
 
     const response = await app.request("/", { headers: { cookie } });
 
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
+    expect(response.headers.get("content-security-policy")).toContain("script-src 'self';");
     expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(await response.text()).toContain('<script src="/app.js" defer></script>');
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
-  it("serves the stylesheet and the health check without a session", async () => {
+  it("serves the stylesheet, the script and the health check without a session", async () => {
     expect((await app.request("/app.css")).headers.get("content-type")).toContain("text/css");
+    const script = await app.request("/app.js");
+    expect(script.headers.get("content-type")).toContain("text/javascript");
+    expect(await script.text()).toContain("requestSubmit");
     expect(await (await app.request("/health")).text()).toBe("ok");
   });
 });

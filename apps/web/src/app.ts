@@ -28,6 +28,7 @@ import { dateFormatter } from "./views/labels.ts";
 import type { Fragment, ViewContext } from "./views/layout.ts";
 import { type Notice, notices, requestPage } from "./views/request.ts";
 import { requestListPage, reviewQueuePage } from "./views/requests.ts";
+import { script } from "./views/script.ts";
 import { signInPage } from "./views/sign-in.ts";
 import { stylesheet } from "./views/style.ts";
 
@@ -62,11 +63,13 @@ export function createWebApp(options: WebAppOptions) {
   const render = (c: Context<Env>, fragment: Fragment, status: 200 | 400 | 401 | 404 | 429 = 200) =>
     c.html(fragment, status);
 
-  // No script and no inline style or resource from elsewhere (OWASP Secure Headers Project).
+  // Only the script and stylesheet of this site: nothing inline and no resource from elsewhere
+  // (OWASP Secure Headers Project).
   app.use(
     secureHeaders({
       contentSecurityPolicy: {
         defaultSrc: ["'none'"],
+        scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
         imgSrc: ["'self'"],
         formAction: ["'self'"],
@@ -89,6 +92,9 @@ export function createWebApp(options: WebAppOptions) {
   app.get("/health", (c) => c.text("ok"));
   app.get("/app.css", (c) =>
     c.body(stylesheet, 200, { "Content-Type": "text/css; charset=utf-8" }),
+  );
+  app.get("/app.js", (c) =>
+    c.body(script, 200, { "Content-Type": "text/javascript; charset=utf-8" }),
   );
 
   app.get("/login", (c) => render(c, signInPage()));
