@@ -169,6 +169,8 @@ The team consults the requests and validates the decisions of the agent in a web
    pnpm web
    ```
 
+   It runs until it is stopped with Ctrl+C in its terminal. When port 4112 is already in use, often by another interface still running, it says so and stops: stop the other one, or choose another port with `WEB_PORT` in `.env`.
+
 3. Open `http://127.0.0.1:4112` in Chrome or Firefox and sign in. Safari refuses the session cookie over plain HTTP, even on this machine.
 
 The interface lists the requests with a search and filters, shows the review queue with the reasons of each review, and shows each request with its messages, the answers of the agent and its full history. A request can be validated with corrections, changed to another status or marked as a duplicate: the history records the person who did it. The choices and protections of the interface are described in [decision 008](docs/decisions/008-web-interface.md).
@@ -269,6 +271,7 @@ Request-agent/
 │   │   └── src/
 │   │       ├── main.ts             Starts the interface
 │   │       ├── config.ts           Environment variables validation
+│   │       ├── listen.ts           Starts listening, and tells a busy port in plain words
 │   │       ├── app.ts              Pages, actions, sign-in and protections
 │   │       ├── sign-in-limiter.ts  Refuses sign-in for a while after repeated failures
 │   │       └── views/              Pages, rendered on the server, and their labels in French
