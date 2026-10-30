@@ -59,11 +59,13 @@ const seedContacts: SeedContact[] = [
 
 const seedProjectChannels: {
   project: SeedProjectKey;
-  channel: "SLACK" | "EMAIL";
+  channel: "SLACK" | "EMAIL" | "WIDGET";
   externalId: string;
 }[] = [
   { project: "SHOP", channel: "SLACK", externalId: "C000000SHOP" },
   { project: "PORTAL", channel: "EMAIL", externalId: "portal-support@initech.example" },
+  // The widget embedded in the portal names its project.
+  { project: "PORTAL", channel: "WIDGET", externalId: "PORTAL" },
 ];
 
 function knownId(ids: Map<string, string>, key: string): string {

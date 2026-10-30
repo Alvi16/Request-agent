@@ -33,7 +33,7 @@ const updatedAt = () =>
 
 const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
-export const channel = pgEnum("channel", ["SLACK", "EMAIL"]);
+export const channel = pgEnum("channel", ["SLACK", "EMAIL", "WIDGET"]);
 export const messageDirection = pgEnum("message_direction", ["INBOUND", "OUTBOUND"]);
 export const requestType = pgEnum("request_type", [
   "BUG",
