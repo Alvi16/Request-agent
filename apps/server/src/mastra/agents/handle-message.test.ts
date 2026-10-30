@@ -373,11 +373,28 @@ describe("handleMessage", () => {
 
     expect(result).toEqual({
       reply:
-        "Votre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
-      filedBySystem: true,
+        "Votre question est transmise à l'équipe, sous la référence REQ-0001 : « Travaillez-vous le samedi ? »",
+      filedBySystem: false,
     });
     const history = await getDatabase().select().from(events);
     expect(history.filter((event) => event.type === "REVIEW_REQUESTED")).toHaveLength(1);
+  });
+
+  it("passes a follow-up question that got no answer to the request of its conversation", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno, {
+      thread: "thread-portal",
+    });
+
+    const { result } = await run([{ text: "Ils vous diront bientôt." }], bruno, {
+      classification: { type: "FOLLOW_UP" },
+      text: "C'est prévu pour quand ?",
+      thread: "thread-portal",
+    });
+
+    expect(result.reply).toBe(
+      "Votre question est transmise à l'équipe, sous la référence REQ-0001 : « C'est prévu pour quand ? »",
+    );
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
   });
 
   it("sends the answer as plain text, and adds the reference of a message the system filed", async () => {

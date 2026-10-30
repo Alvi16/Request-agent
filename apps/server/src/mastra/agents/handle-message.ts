@@ -127,22 +127,26 @@ function askedForDetails(outcomes: ToolOutcome[]): boolean {
   return outcomes.some((o) => o.tool === "request_clarification" && o.result.ok);
 }
 
-// Files a message that is still filed under no request, so none is lost: as a request for a
-// person, or, for a question that is not a request and got no answer, as a question passed to the
-// team.
-async function fileForPerson(
+function wasForwarded(outcomes: ToolOutcome[]): boolean {
+  return outcomes.some((o) => o.tool === "forward_to_team" && o.result.ok);
+}
+
+// A question that got no answer which can be sent goes to the team, so that a person answers it,
+// on the request of the message, of its conversation, or a new one.
+async function forwardUnanswered(
   db: Database,
   turn: ClassifiedTurn,
-  answer: string,
-): Promise<RequestView | undefined> {
-  const filed = await fileUnhandledMessage(db, turn);
-  if (filed !== undefined || answer !== "" || !asksAQuestion(turn.messageText)) {
-    return filed;
+  outcomes: ToolOutcome[],
+): Promise<void> {
+  if (!asksAQuestion(turn.messageText) || askedForDetails(outcomes) || wasForwarded(outcomes)) {
+    return;
   }
-  const forwarded = await forwardToTeam(db, turn, {
-    question: turn.messageText.slice(0, forwardedQuestionLength),
+  const question = turn.messageText.slice(0, forwardedQuestionLength);
+  outcomes.push({
+    tool: "forward_to_team",
+    question,
+    result: await forwardToTeam(db, turn, { question }),
   });
-  return forwarded.ok ? forwarded.value : undefined;
 }
 
 function finalReply(
@@ -198,15 +202,19 @@ export async function handleMessage(
   });
 
   const answer = finalAnswer(result);
-  let filed = await isMessageFiled(db, turn.messageId);
-  if (!filed) {
+  if (!(await isMessageFiled(db, turn.messageId))) {
     const kept = await keepFollowUp(db, turn);
-    if (kept?.result.ok === true) {
+    if (kept !== undefined) {
       outcomes.push(kept);
-      filed = true;
     }
   }
-  const filedBySystem = filed ? undefined : await fileForPerson(db, turn, answer);
+  if (answer === "") {
+    await forwardUnanswered(db, turn, outcomes);
+  }
+  // A message still filed under no request is filed for a person, so none is lost.
+  const filedBySystem = (await isMessageFiled(db, turn.messageId))
+    ? undefined
+    : await fileUnhandledMessage(db, turn);
   return {
     reply: finalReply(answer, outcomes, filedBySystem),
     filedBySystem: filedBySystem !== undefined,

@@ -201,7 +201,8 @@ export function createRequestTools(
     description:
       "Passes to the team a question or a wish of the sender that the tools cannot answer or " +
       "do: a date, who handles a request, how to use the product, closing or escalating a " +
-      "request. The request of the message then waits for a person, who reads the question.",
+      "request. Give the reference of the request the question is about, if any. That request " +
+      "then waits for a person, who reads the question.",
     inputSchema: forwardToTeamInput,
     execute: async (input) => {
       const result = await forwardToTeam(db, turn, input);
