@@ -12,6 +12,7 @@ import {
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { offeredTools, type ScriptedStep, scriptedModel } from "../../../test/scripted-model";
+import { maxAnswerRetries } from "./answer-check";
 import { handleMessage, maxAgentSteps } from "./handle-message";
 import { createRequestAgent } from "./request-agent";
 
@@ -41,12 +42,13 @@ async function run(
     trust?: "VERIFIED" | "UNVERIFIED";
     classification?: Partial<Classification>;
     judgeDuplicate?: DuplicateJudge;
+    text?: string;
   } = {},
 ) {
   const model = scriptedModel(steps);
   const messageId = await storeMessage(getDatabase(), {
     sender,
-    bodyText: "Le portail ne répond plus.",
+    bodyText: options.text ?? "Le portail ne répond plus.",
   });
   const result = await handleMessage(
     createRequestAgent(model),
@@ -62,18 +64,16 @@ async function run(
 }
 
 describe("handleMessage", () => {
-  it("files the message of a verified contact as a request, from its classification", async () => {
+  it("files the message of a verified contact as a request, and sends the answer of the model", async () => {
+    const answer =
+      "Votre demande est enregistrée sous la référence REQ-0001 : Portail inaccessible.";
     const { model, result } = await run(
-      [{ toolCalls: [{ tool: "create_request", input: {} }] }, { text: "Demande créée." }],
+      [{ toolCalls: [{ tool: "create_request", input: {} }] }, { text: answer }],
       bruno,
     );
 
-    expect(result).toEqual({
-      reply: "Votre demande est enregistrée sous la référence REQ-0001.",
-      filedBySystem: false,
-    });
-    // Filing settles the message, so the model is not called again to write an answer.
-    expect(model.doGenerateCalls).toHaveLength(1);
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+    expect(model.doGenerateCalls).toHaveLength(2);
     const [request] = await getDatabase().select().from(requests);
     expect(request).toMatchObject({
       title: "Portail inaccessible",
@@ -90,18 +90,23 @@ describe("handleMessage", () => {
       return Promise.resolve({ reference: "REQ-0001", confidence: 0.92 });
     };
 
-    const { result } = await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno, {
-      judgeDuplicate: sameProblem,
-    });
+    const { result } = await run(
+      [
+        { toolCalls: [{ tool: "create_request", input: {} }] },
+        { text: "Votre message a été ajouté à la demande REQ-0001, ouverte pour ce problème." },
+      ],
+      bruno,
+      { judgeDuplicate: sameProblem },
+    );
 
     expect(result.reply).toBe(
-      "Votre message concerne la demande existante REQ-0001 : il y a été ajouté.",
+      "Votre message a été ajouté à la demande REQ-0001, ouverte pour ce problème.",
     );
     expect(await getDatabase().select().from(requests)).toHaveLength(1);
     expect(candidates).toEqual([[expect.objectContaining({ reference: "REQ-0001" })]]);
   });
 
-  it("gives the model the facts computed by the system and the wrapped message", async () => {
+  it("gives the model the information computed by the system and the wrapped message", async () => {
     const { model } = await run([{ text: "Bonjour" }], bruno);
 
     const prompt = model.doGenerateCalls[0]?.prompt ?? [];
@@ -109,7 +114,7 @@ describe("handleMessage", () => {
       .filter((message) => message.role === "system")
       .map((message) => message.content)
       .join("\n");
-    expect(system).toContain("Facts computed by the system");
+    expect(system).toContain("Information computed by the system");
     expect(system).toContain('"key": "PORTAL"');
     expect(system).toContain('"confidence": 0.9');
     expect(JSON.stringify(prompt)).toContain("<message>\\nLe portail ne répond plus.\\n</message>");
@@ -210,7 +215,7 @@ describe("handleMessage", () => {
     expect(model.doGenerateCalls).toHaveLength(maxAgentSteps);
   });
 
-  it("never sends the text of the model, and files a message the agent left unhandled", async () => {
+  it("never sends an answer naming a request no tool returned, and files a message left unhandled", async () => {
     const { result } = await run(
       [{ text: "C'est noté sous REQ-0042, l'équipe s'en occupe." }],
       bruno,
@@ -256,21 +261,81 @@ describe("handleMessage", () => {
     expect(await getDatabase().select().from(requests)).toHaveLength(0);
   });
 
-  it("answers a status request with the status, and files the message under the request", async () => {
+  it("answers a follow-up with the answer of the model, after looking up the request", async () => {
     await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
+    const answer =
+      "La demande REQ-0001, Portail inaccessible, est nouvelle : personne de l'équipe ne l'a encore prise en charge.";
 
     const { result } = await run(
       [
+        { toolCalls: [{ tool: "add_message_to_request", input: { reference: "REQ-0001" } }] },
+        { toolCalls: [{ tool: "get_request_status", input: { reference: "REQ-0001" } }] },
+        { text: answer },
+      ],
+      bruno,
+      { classification: { type: "STATUS_REQUEST" }, text: "Où en êtes-vous ?" },
+    );
+
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+  });
+
+  it("falls back to the answer written by code when no answer of the model can be sent", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno);
+
+    const { model, result } = await run(
+      [
         { toolCalls: [{ tool: "get_request_status", input: { reference: "REQ-0001" } }] },
         { toolCalls: [{ tool: "add_message_to_request", input: { reference: "REQ-0001" } }] },
+        { text: "Vous serez informé dès qu'elle avance." },
       ],
       bruno,
       { classification: { type: "STATUS_REQUEST" } },
     );
 
+    expect(model.doGenerateCalls).toHaveLength(3 + maxAnswerRetries);
     expect(result.reply).toBe(
       "Votre message a été ajouté à la demande REQ-0001. La demande REQ-0001 est enregistrée, en attente de traitement.",
     );
+  });
+
+  it("answers a question that is not a request, and passes it to the team", async () => {
+    const question = "L'équipe travaille-t-elle le samedi ?";
+    const answer = "Je n'ai pas cette information : votre question est transmise à l'équipe.";
+
+    const { result } = await run(
+      [{ toolCalls: [{ tool: "forward_to_team", input: { question } }] }, { text: answer }],
+      bruno,
+      { classification: { type: "OTHER", confidence: 0.95 }, text: "Travaillez-vous le samedi ?" },
+    );
+
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+    const [request] = await getDatabase().select().from(requests);
+    expect(request).toMatchObject({ type: "OTHER", needsReview: true });
+  });
+
+  it("passes a question to the team itself when the model gives no answer that can be sent", async () => {
+    const { result } = await run([{ text: "Nous allons voir cela." }], bruno, {
+      classification: { type: "OTHER", confidence: 0.95 },
+      text: "Travaillez-vous le samedi ?",
+    });
+
+    expect(result).toEqual({
+      reply:
+        "Votre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
+      filedBySystem: true,
+    });
+    const history = await getDatabase().select().from(events);
+    expect(history.filter((event) => event.type === "REVIEW_REQUESTED")).toHaveLength(1);
+  });
+
+  it("sends the answer as plain text, and adds the reference of a message the system filed", async () => {
+    const { result } = await run([{ text: "**Bien reçu**, nous regardons." }], bruno);
+
+    expect(result).toEqual({
+      reply:
+        "Bien reçu, nous regardons.\n\nVotre message est enregistré sous la référence REQ-0001. Une personne de l'équipe va le traiter.",
+      filedBySystem: true,
+    });
   });
 
   it("writes nothing when the classification fails", async () => {
