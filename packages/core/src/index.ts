@@ -30,6 +30,14 @@ export {
   type KnowledgeEnv,
 } from "./env.ts";
 export {
+  articleInput,
+  knowledgeResultCount,
+  saveArticle,
+  searchKnowledge,
+  type ArticleInput,
+  type KnowledgeHit,
+} from "./knowledge/articles.ts";
+export {
   createOllamaEmbedder,
   type Embedder,
   type OllamaEmbedderOptions,
