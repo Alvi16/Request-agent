@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database, Transaction } from "../db/client.ts";
@@ -84,7 +84,8 @@ export async function listReviewQueue(db: Database, limit = 50): Promise<ReviewI
   );
 }
 
-// Why the request was sent to a person, as recorded by its latest classification.
+// Why the request was sent to a person: the reasons recorded by its latest classification, and a
+// question the agent passed to the team since the last review.
 export async function reviewReasonsOf(db: Database, requestId: string): Promise<string[]> {
   const [classified] = await db
     .select({ data: events.data })
@@ -92,10 +93,22 @@ export async function reviewReasonsOf(db: Database, requestId: string): Promise<
     .where(and(eq(events.requestId, requestId), eq(events.type, "CLASSIFIED")))
     .orderBy(desc(events.createdAt))
     .limit(1);
-  return z
+  const reasons = z
     .object({ reviewReasons: z.array(z.string()).default([]) })
     .catch({ reviewReasons: [] })
     .parse(classified?.data ?? {}).reviewReasons;
+  const [latest] = await db
+    .select({ type: events.type })
+    .from(events)
+    .where(
+      and(eq(events.requestId, requestId), inArray(events.type, ["REVIEW_REQUESTED", "REVIEWED"])),
+    )
+    .orderBy(desc(events.createdAt), desc(events.id))
+    .limit(1);
+  const forwarded = latest?.type === "REVIEW_REQUESTED";
+  return forwarded && !reasons.includes("QUESTION_FOR_TEAM")
+    ? [...reasons, "QUESTION_FOR_TEAM"]
+    : reasons;
 }
 
 // A person checked the request: it leaves the queue, with the corrections they made, recorded in
