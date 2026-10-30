@@ -190,6 +190,30 @@ describe("pages", () => {
     expect(filtered).not.toContain(`>${reference}<`);
   });
 
+  it("shows the type, status, priority and source as colored badges", async () => {
+    const cookie = await signIn();
+    await portalRequest("Le portail plante.");
+
+    const list = await (await app.request("/", { headers: { cookie } })).text();
+
+    expect(list).toContain(`<span class="badge badge-gray">Bug</span>`);
+    expect(list).toContain(`<span class="badge badge-green">Nouvelle</span>`);
+    expect(list).toContain(`<span class="badge badge-red">Haute</span>`);
+    expect(list).toContain(`<span class="badge badge-gray">E-mail</span>`);
+  });
+
+  it("marks the open page in the navigation", async () => {
+    const cookie = await signIn();
+
+    const list = await (await app.request("/", { headers: { cookie } })).text();
+    const queue = await (await app.request("/review", { headers: { cookie } })).text();
+
+    expect(list).toContain(`<a href="/" aria-current="page">Demandes</a>`);
+    expect(list).not.toContain(`<a href="/review" aria-current="page">`);
+    expect(queue).not.toContain(`<a href="/" aria-current="page">`);
+    expect(queue).toContain(`<a href="/review" aria-current="page">À revoir</a>`);
+  });
+
   it("refuses unknown filter values", async () => {
     const cookie = await signIn();
 
