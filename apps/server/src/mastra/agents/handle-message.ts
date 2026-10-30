@@ -149,11 +149,7 @@ async function forwardUnanswered(
     return;
   }
   const question = turn.messageText.slice(0, forwardedQuestionLength);
-  outcomes.push({
-    tool: "forward_to_team",
-    question,
-    result: await forwardToTeam(db, turn, { question }),
-  });
+  outcomes.push({ tool: "forward_to_team", result: await forwardToTeam(db, turn, { question }) });
 }
 
 function finalReply(

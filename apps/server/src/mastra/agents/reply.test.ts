@@ -70,7 +70,6 @@ describe("composeReply", () => {
     const outcomes: ToolOutcome[] = [
       {
         tool: "forward_to_team",
-        question: "Quand est-ce prévu ?",
         result: { ok: true, value: request },
       },
     ];
