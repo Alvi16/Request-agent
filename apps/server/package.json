@@ -9,6 +9,7 @@
     "build": "mastra build",
     "start": "mastra start --env ../../.env",
     "demo:email": "node --env-file-if-exists=../../.env scripts/demo-email.ts",
+    "demo:widget": "node --env-file-if-exists=../../.env scripts/demo-widget.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
