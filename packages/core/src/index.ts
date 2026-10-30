@@ -53,6 +53,7 @@ export {
   describeProject,
   findRequest,
   getRequestStatus,
+  isMessageFiled,
   listContactRequests,
   listProjectRequests,
   searchRequests,

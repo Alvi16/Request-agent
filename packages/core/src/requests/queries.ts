@@ -115,6 +115,15 @@ export async function describeProject(db: Database, turn: Turn): Promise<Project
   return { status: "identified", project, source: identification.source };
 }
 
+// Whether the message is filed under a request, by the agent or by the system.
+export async function isMessageFiled(db: Database, messageId: string): Promise<boolean> {
+  const [message] = await db
+    .select({ requestId: messages.requestId })
+    .from(messages)
+    .where(eq(messages.id, messageId));
+  return message !== undefined && message.requestId !== null;
+}
+
 // The request most recently linked to the conversation of the message being handled: a reply in a
 // thread usually follows up on it.
 export async function findConversationRequestId(

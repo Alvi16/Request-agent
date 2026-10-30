@@ -13,6 +13,7 @@ import type { Classification } from "../classification/classifier.ts";
 import {
   findRequest,
   getRequestStatus,
+  isMessageFiled,
   listContactRequests,
   listProjectRequests,
   searchRequests,
@@ -204,6 +205,17 @@ describe("listProjectRequests", () => {
         limit: 10,
       }),
     ).toEqual({ ok: false, error: "PROJECT_NOT_FOUND" });
+  });
+});
+
+describe("isMessageFiled", () => {
+  it("tells whether a message is filed under a request", async () => {
+    const filed = await turnFor(bruno);
+    await createRequest(getAppDatabase(), classified(filed), {});
+    const unfiled = await turnFor(bruno);
+
+    expect(await isMessageFiled(getAppDatabase(), filed.messageId)).toBe(true);
+    expect(await isMessageFiled(getAppDatabase(), unfiled.messageId)).toBe(false);
   });
 });
 
