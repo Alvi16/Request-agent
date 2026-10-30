@@ -41,6 +41,7 @@ export {
   addMessageToRequest,
   createRequest,
   fileUnhandledMessage,
+  forwardToTeam,
   maxClarifications,
   requestClarification,
   updateRequest,

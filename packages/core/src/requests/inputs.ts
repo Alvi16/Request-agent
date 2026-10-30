@@ -31,6 +31,15 @@ export const requestClarificationInput = z.object({
   question: z.string().trim().min(1).max(500).describe("The question to ask the sender"),
 });
 
+export const forwardToTeamInput = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .describe("The question or wish of the sender, as the team should read it"),
+});
+
 export const updateRequestInput = z.object({
   reference,
   changes: z.object({
@@ -65,6 +74,7 @@ export const searchRequestsInput = z.object({
 
 export type CreateRequestInput = z.infer<typeof createRequestInput>;
 export type RequestClarificationInput = z.infer<typeof requestClarificationInput>;
+export type ForwardToTeamInput = z.infer<typeof forwardToTeamInput>;
 export type UpdateRequestInput = z.infer<typeof updateRequestInput>;
 export type RequestReferenceInput = z.infer<typeof requestReferenceInput>;
 export type FindRequestInput = z.infer<typeof findRequestInput>;

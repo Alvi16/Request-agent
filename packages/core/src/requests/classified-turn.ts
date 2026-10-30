@@ -139,7 +139,9 @@ export type ReviewReason =
   // The message may be about an existing request, without enough confidence to merge them.
   | "POSSIBLE_DUPLICATE"
   // The agent ended without filing the message, so the system filed it.
-  | "UNHANDLED";
+  | "UNHANDLED"
+  // The agent passed a question or a wish of the sender that it cannot answer to the team.
+  | "QUESTION_FOR_TEAM";
 
 // Why a new request must wait for a person, given the project it is filed under. An empty list
 // means the agent's decision can be trusted without review.

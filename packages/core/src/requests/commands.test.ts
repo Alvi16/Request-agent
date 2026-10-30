@@ -10,6 +10,7 @@ import {
   addMessageToRequest,
   createRequest,
   fileUnhandledMessage,
+  forwardToTeam,
   maxClarifications,
   requestClarification,
   updateRequest,
@@ -359,6 +360,54 @@ describe("addMessageToRequest", () => {
     const result = await addMessageToRequest(getAppDatabase(), await turnFor(bruno), { reference });
 
     expect(result).toEqual({ ok: false, error: "NOT_FOUND" });
+  });
+});
+
+describe("forwardToTeam", () => {
+  it("passes a question to the team on the request of the message, which then waits for a person", async () => {
+    const reference = await createdReference(bruno, { projectKey: "PORTAL" });
+    const followUp = await turnFor(bruno, { text: "C'est pour quand ?" });
+    await addMessageToRequest(getAppDatabase(), followUp, { reference });
+
+    const result = await forwardToTeam(getAppDatabase(), followUp, {
+      question: "Quand la correction est-elle prévue ?",
+    });
+
+    expect(result).toMatchObject({ ok: true, value: { reference, needsReview: true } });
+    const forwarded = await getDatabase()
+      .select()
+      .from(events)
+      .where(eq(events.type, "REVIEW_REQUESTED"));
+    expect(forwarded).toMatchObject([
+      {
+        actorType: "AGENT",
+        messageId: followUp.messageId,
+        data: { reason: "QUESTION_FOR_TEAM", question: "Quand la correction est-elle prévue ?" },
+      },
+    ]);
+  });
+
+  it("files a question that no request holds, even one that is not a request, for a person", async () => {
+    const question = await turnFor(bruno, {
+      text: "Travaillez-vous le samedi ?",
+      classification: { type: "OTHER", confidence: 0.95 },
+    });
+
+    const result = await forwardToTeam(getAppDatabase(), question, {
+      question: "L'équipe travaille-t-elle le samedi ?",
+    });
+
+    expect(result).toMatchObject({ ok: true, value: { type: "OTHER", needsReview: true } });
+    const [classifiedEvent] = await getDatabase()
+      .select()
+      .from(events)
+      .where(eq(events.type, "CLASSIFIED"));
+    expect(classifiedEvent?.data).toMatchObject({ reviewReasons: ["QUESTION_FOR_TEAM"] });
+    const [message] = await getDatabase()
+      .select({ requestId: messages.requestId })
+      .from(messages)
+      .where(eq(messages.id, question.messageId));
+    expect(message?.requestId).not.toBeNull();
   });
 });
 

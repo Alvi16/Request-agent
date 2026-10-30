@@ -11,6 +11,7 @@ import {
 } from "./classified-turn.ts";
 import type {
   CreateRequestInput,
+  ForwardToTeamInput,
   RequestClarificationInput,
   RequestReferenceInput,
   UpdateRequestInput,
@@ -310,6 +311,35 @@ export function requestClarification(
       channel: message.channel,
       messageId: message.id,
       data: { question: input.question },
+    });
+    return succeed(await loadView(tx, requestId));
+  });
+}
+
+// Passes a question or a wish of the sender that the agent cannot answer to the team: on the
+// request of the message, or on a new request filed for it. The request waits for a person, who
+// sees the question in its history.
+export function forwardToTeam(
+  db: Database,
+  turn: ClassifiedTurn,
+  input: ForwardToTeamInput,
+): Promise<Result<RequestView, never>> {
+  return db.transaction(async (tx) => {
+    const message = await lockTurnMessage(tx, turn);
+    let requestId = message.requestId;
+    if (requestId === null) {
+      const project = turn.project.status === "identified" ? turn.project.projectId : null;
+      requestId = await insertRequest(tx, turn, message, project, "NEW", ["QUESTION_FOR_TEAM"]);
+    } else {
+      await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
+    }
+    await tx.insert(events).values({
+      requestId,
+      type: "REVIEW_REQUESTED",
+      actorType: "AGENT",
+      channel: message.channel,
+      messageId: message.id,
+      data: { reason: "QUESTION_FOR_TEAM", question: input.question },
     });
     return succeed(await loadView(tx, requestId));
   });
