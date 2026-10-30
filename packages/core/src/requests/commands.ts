@@ -16,6 +16,7 @@ import type {
   RequestReferenceInput,
   UpdateRequestInput,
 } from "./inputs.ts";
+import { findConversationRequestId } from "./queries.ts";
 import { parseReference } from "./reference.ts";
 import { assignableProjectIds, type Turn } from "./turn.ts";
 import {
@@ -316,9 +317,44 @@ export function requestClarification(
   });
 }
 
+// Types of a message about a request already made, rather than about a new problem.
+const followUpTypes = new Set<ClassifiedTurn["classification"]["type"]>([
+  "FOLLOW_UP",
+  "STATUS_REQUEST",
+  "OTHER",
+]);
+
+// The request a message without one belongs to, for the question it passes to the team: the
+// request of its conversation when it follows up on it, or else a new request filed for it.
+async function requestForQuestion(
+  tx: Transaction,
+  turn: ClassifiedTurn,
+  message: TurnMessage,
+): Promise<string> {
+  const conversationRequestId = followUpTypes.has(turn.classification.type)
+    ? await findConversationRequestId(tx, turn)
+    : undefined;
+  if (conversationRequestId === undefined) {
+    const project = turn.project.status === "identified" ? turn.project.projectId : null;
+    return insertRequest(tx, turn, message, project, "NEW", ["QUESTION_FOR_TEAM"]);
+  }
+  await tx
+    .update(messages)
+    .set({ requestId: conversationRequestId })
+    .where(eq(messages.id, message.id));
+  await tx.insert(events).values({
+    requestId: conversationRequestId,
+    type: "MESSAGE_ADDED",
+    actorType: "AGENT",
+    channel: message.channel,
+    messageId: message.id,
+  });
+  return conversationRequestId;
+}
+
 // Passes a question or a wish of the sender that the agent cannot answer to the team: on the
-// request of the message, or on a new request filed for it. The request waits for a person, who
-// sees the question in its history.
+// request of the message, or of its conversation, or on a new request filed for it. The request
+// waits for a person, who sees the question in its history.
 export function forwardToTeam(
   db: Database,
   turn: ClassifiedTurn,
@@ -326,13 +362,8 @@ export function forwardToTeam(
 ): Promise<Result<RequestView, never>> {
   return db.transaction(async (tx) => {
     const message = await lockTurnMessage(tx, turn);
-    let requestId = message.requestId;
-    if (requestId === null) {
-      const project = turn.project.status === "identified" ? turn.project.projectId : null;
-      requestId = await insertRequest(tx, turn, message, project, "NEW", ["QUESTION_FOR_TEAM"]);
-    } else {
-      await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
-    }
+    const requestId = message.requestId ?? (await requestForQuestion(tx, turn, message));
+    await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
     await tx.insert(events).values({
       requestId,
       type: "REVIEW_REQUESTED",

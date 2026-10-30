@@ -387,6 +387,44 @@ describe("forwardToTeam", () => {
     ]);
   });
 
+  it("passes a follow-up question to the request of its conversation, instead of a new request", async () => {
+    const first = await createRequest(
+      getAppDatabase(),
+      await turnFor(bruno, { thread: "t-1" }),
+      {},
+    );
+    const followUp = await turnFor(bruno, {
+      thread: "t-1",
+      text: "Pouvez-vous la clôturer ?",
+      classification: { type: "FOLLOW_UP" },
+    });
+
+    const result = await forwardToTeam(getAppDatabase(), followUp, { question: "Clôturer ?" });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { reference: first.ok ? first.value.request.reference : "", needsReview: true },
+    });
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
+    const history = await getDatabase().select().from(events).orderBy(asc(events.createdAt));
+    expect(
+      history.filter((event) => event.messageId === followUp.messageId).map((e) => e.type),
+    ).toEqual(["MESSAGE_ADDED", "REVIEW_REQUESTED"]);
+  });
+
+  it("files a new question asked in a known conversation as its own request", async () => {
+    await createRequest(getAppDatabase(), await turnFor(bruno, { thread: "t-2" }), {});
+    const question = await turnFor(bruno, {
+      thread: "t-2",
+      text: "Comment ajouter un utilisateur ?",
+      classification: { type: "SUPPORT" },
+    });
+
+    await forwardToTeam(getAppDatabase(), question, { question: "Ajouter un utilisateur ?" });
+
+    expect(await getDatabase().select().from(requests)).toHaveLength(2);
+  });
+
   it("files a question that no request holds, even one that is not a request, for a person", async () => {
     const question = await turnFor(bruno, {
       text: "Travaillez-vous le samedi ?",

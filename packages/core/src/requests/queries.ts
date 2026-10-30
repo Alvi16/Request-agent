@@ -1,6 +1,6 @@
 import { and, count, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 
-import type { Database } from "../db/client.ts";
+import type { Database, Transaction } from "../db/client.ts";
 import { contacts, events, messages, organizations, projects, requests } from "../db/schema.ts";
 import { visibleRequests, worksOnProject } from "./access.ts";
 import type {
@@ -117,7 +117,10 @@ export async function describeProject(db: Database, turn: Turn): Promise<Project
 
 // The request most recently linked to the conversation of the message being handled: a reply in a
 // thread usually follows up on it.
-async function findConversationRequestId(db: Database, turn: Turn): Promise<string | undefined> {
+export async function findConversationRequestId(
+  db: Database | Transaction,
+  turn: Turn,
+): Promise<string | undefined> {
   const conversation = db
     .select({ id: messages.conversationId })
     .from(messages)
