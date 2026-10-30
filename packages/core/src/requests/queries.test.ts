@@ -17,6 +17,7 @@ import {
   listProjectRequests,
   searchRequests,
 } from "./queries.ts";
+import { reviewRequest } from "./review.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
 
 const getDatabase = useTestDatabase();
@@ -83,11 +84,13 @@ describe("findRequest", () => {
   it("returns a request with its history, without the text of its messages", async () => {
     const reference = await file(alice, { type: "BUG", title: "Panier vidé", projectKey: "SHOP" });
     await addMessageToRequest(getAppDatabase(), await turnFor(alice), { reference });
+    await reviewRequest(getAppDatabase(), { contactId: null }, { reference, changes: {} });
 
     const result = await findRequest(getAppDatabase(), await turnFor(alice), { reference });
 
     expect(result).toMatchObject({ ok: true, value: { request: { reference }, messageCount: 2 } });
     expect(result.ok && result.value.recentEvents.map((event) => [event.type, event.by])).toEqual([
+      ["REVIEWED", "HUMAN"],
       ["MESSAGE_ADDED", "AGENT"],
       ["CLASSIFIED", "AGENT"],
       ["CREATED", "AGENT"],
