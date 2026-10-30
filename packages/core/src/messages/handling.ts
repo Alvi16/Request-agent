@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.ts";
-import { messages } from "../db/schema.ts";
+import { conversations, messages } from "../db/schema.ts";
 
 type Channel = (typeof messages.$inferSelect)["channel"];
 
@@ -10,6 +10,9 @@ export const maxHandlingAttempts = 3;
 
 export interface UnhandledMessage {
   messageId: string;
+  // The message and its conversation, as named by their channel.
+  externalId: string;
+  conversationExternalId: string;
   // Original payload stored by the channel adapter, from which the adapter can handle it again.
   raw: unknown;
   handlingAttempts: number;
@@ -45,10 +48,13 @@ export async function listUnhandledMessages(
   const rows = await db
     .select({
       messageId: messages.id,
+      externalId: messages.externalId,
+      conversationExternalId: conversations.externalId,
       raw: messages.raw,
       handlingAttempts: messages.handlingAttempts,
     })
     .from(messages)
+    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
     .where(
       and(
         eq(messages.channel, channel),

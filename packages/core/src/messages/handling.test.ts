@@ -26,7 +26,11 @@ describe("message handling", () => {
     const unhandled = await listUnhandledMessages(getAppDatabase(), "EMAIL");
 
     expect(unhandled.map((m) => m.messageId)).toEqual([first.messageId, second.messageId]);
-    expect(unhandled[0]?.raw).toEqual({ id: "<1@acme.example>" });
+    expect(unhandled[0]).toMatchObject({
+      externalId: "<1@acme.example>",
+      conversationExternalId: "<thread@acme.example>",
+      raw: { id: "<1@acme.example>" },
+    });
     expect(await listUnhandledMessages(getAppDatabase(), "SLACK")).toEqual([]);
   });
 
