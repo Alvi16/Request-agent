@@ -8,7 +8,7 @@ This guide runs the two scenarios of the brief, Email → Agent → Request and 
 - For the email scenario, `.env` keeps the values of the local mail server, with `EMAIL_TRUST_LOCAL_SENDERS=true`, so the fictitious senders count as verified.
 - For the Slack scenario, the Slack app is created and its two tokens are set in `.env`, as described in [Connecting Slack](../README.md#connecting-slack).
 
-On a CPU, each answer of the agent takes 2 to 4 minutes. A computer that goes to sleep pauses the agent: keep it awake during the demonstration.
+On a CPU, each answer of the agent takes 2 to 7 minutes. A computer that goes to sleep pauses the agent: keep it awake during the demonstration.
 
 ## 1. Prepare the data
 
@@ -42,12 +42,12 @@ pnpm demo:email --subject "Mot de passe oublié" \
   --text "Bonjour, sur le portail client, le lien « mot de passe oublié » n'envoie plus aucun email de réinitialisation depuis ce matin."
 ```
 
-The command only works with a mail server on this machine. It prints the answer of the agent:
+The command only works with a mail server on this machine. It prints the answer of the agent. The model writes it, so its words vary from one run to the next, but it gives the reference of the request:
 
 ```
 Answer received.
 Subject: Re: Mot de passe oublié [REQ-0001]
-Votre demande est enregistrée sous la référence REQ-0001.
+Votre demande est enregistrée sous la référence REQ-0001 …
 ```
 
 In the web interface, open the request. Expected, as observed with `ornith:9b`:
@@ -56,6 +56,10 @@ In the web interface, open the request. Expected, as observed with `ornith:9b`:
 - author Bruno Leroy, of Globex, and a confidence close to 100 %;
 - the email received and the answer of the agent under **Messages**;
 - `Créée` and `Classée` under **Historique**, with the model, the confidence and the review threshold.
+
+### Asking questions
+
+Reply to the answer of the agent, in the same thread, with any question about the request, such as "Où en êtes-vous ?", "Qui s'en occupe ?" or "Quelles demandes ai-je en cours ?". The agent adds the reply to the request, looks up what the answer needs and answers. A question that the data cannot answer, such as "C'est prévu pour quand ?", or a wish, such as "Pouvez-vous la clôturer ?", is passed to the team: the answer says so, and the request appears under **À revoir** with the reason "Question transmise à l'équipe" and the question in its history.
 
 ### Variants
 
@@ -103,7 +107,7 @@ The agent only gives rights to a Slack member who is a known contact. For the de
    @Request agent les paiements par carte sont refusés depuis ce matin
    ```
 
-The agent adds 👀 to the message, then answers in its thread: "Votre demande est enregistrée sous la référence REQ-…". The channel identifies the SHOP project, although Alice works on two projects. In the web interface, the request shows the source Slack, the project SHOP, the author Alice Martin, the message and the answer.
+The agent adds 👀 to the message, then answers in its thread with the reference of the request, REQ-…. The channel identifies the SHOP project, although Alice works on two projects. In the web interface, the request shows the source Slack, the project SHOP, the author Alice Martin, the message and the answer.
 
 5. Reply in the thread, with the reference of the answer: `@Request agent où en est la demande REQ-… ?`. The agent adds the message to the request instead of filing a new one, and answers with its status.
 
