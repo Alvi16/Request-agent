@@ -34,6 +34,11 @@ const internalWords = [
   /\bthe facts\b/i,
   /\bles faits (fournis|calculés|donnés|dont je dispose|que je possède)\b/i,
   /\bdans les faits\b/i,
+  // A code written in lower case, such as "statut : new".
+  new RegExp(
+    `\\b(statut|status|priorité|priority)\\s*:?\\s*["'«“]?\\s*(${enumCodes.join("|")})\\b`,
+    "i",
+  ),
 ];
 
 // Commitments that no part of the system keeps: nobody is notified when a request moves, and no
@@ -49,11 +54,16 @@ const promises = [
   /\b(we|I) will\b/i,
   /\b(we|I)'ll\b/i,
   /\bthe team will\b/i,
+  // Anything the team or the agent "will" do, in the future tense: "ils examineront".
+  /\b(l'équipe|ils|elles|nous|on)\s+(vous\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
+  // A change announced as certain: "la priorité sera mise à jour".
+  /\b(sera|seront)\s+(\p{L}+\s+)?(mise?s?|modifiée?s?|changée?s?|fermée?s?|clôturée?s?|corrigée?s?|résolue?s?|traitée?s?|examinée?s?)\b/iu,
 ];
 
 const forwardClaims = [
   /\b(transmise?s?|transmets|transmettons|transférée?s?|relayée?s?)\b/i,
   /\b(passée?s?|signalée?s?) à l'équipe\b/i,
+  /\bje (passe|transmets)\b/i,
   /\b(forwarded|passed (it |this |your [a-z]+ )?(on )?to the team)\b/i,
 ];
 

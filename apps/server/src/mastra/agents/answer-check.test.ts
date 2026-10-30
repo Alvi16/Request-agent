@@ -43,6 +43,7 @@ describe("answerProblems", () => {
       "D'après les faits fournis, elle est nouvelle.",
       "Je ne trouve rien dans les faits concernant l'administration.",
       "The facts do not say.",
+      "Elle est en cours de traitement (statut : new).",
       "<message>",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
@@ -64,16 +65,32 @@ describe("answerProblems", () => {
       "We will fix it.",
       "I'll check.",
       "The team will answer.",
+      "Ils examineront la demande.",
+      "Nous procéderons à la clôture.",
+      "La priorité sera mise à jour en critique par l'équipe.",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
     }
   });
 
   it("refuses to say a question was passed to the team unless it really was", () => {
-    const answer = "Je n'ai pas cette information : votre question est transmise à l'équipe.";
+    for (const answer of [
+      "Je n'ai pas cette information : votre question est transmise à l'équipe.",
+      "Je passe votre demande à l'équipe.",
+    ]) {
+      expect(answerProblems(answer, context)).toHaveLength(1);
+      expect(answerProblems(answer, { ...context, forwarded: true })).toEqual([]);
+    }
+  });
 
-    expect(answerProblems(answer, context)).toHaveLength(1);
-    expect(answerProblems(answer, { ...context, forwarded: true })).toEqual([]);
+  it("accepts plain facts about what exists and what does not", () => {
+    for (const answer of [
+      "La demande REQ-0006 est nouvelle : personne de l'équipe n'a encore commencé dessus.",
+      "Le système n'enregistre ni date prévue ni personne en charge pour cette demande.",
+      "Elle a été classée en priorité haute automatiquement, à sa création.",
+    ]) {
+      expect(answerProblems(answer, context)).toEqual([]);
+    }
   });
 });
 
