@@ -9,11 +9,13 @@ flowchart LR
     subgraph External
         Slack["Slack<br/>Socket Mode"]
         Mail["Mail server<br/>IMAP and SMTP"]
+        Apps["Client applications<br/>widget script"]
         Ollama["Ollama<br/>ornith:9b, qwen3-embedding:0.6b"]
     end
     subgraph server["apps/server: Mastra server"]
         SlackAdapter["Slack adapter"]
         EmailAdapter["Email adapter"]
+        WidgetAdapter["Widget adapter<br/>/widget routes"]
         Reliable["Reliable handling<br/>retries, recovery"]
         Handler["Message handler"]
         Agent["Request agent<br/>tools built per message"]
@@ -32,8 +34,10 @@ flowchart LR
 
     Slack <--> SlackAdapter
     Mail <--> EmailAdapter
+    Apps <--> WidgetAdapter
     SlackAdapter --> Reliable
     EmailAdapter --> Reliable
+    WidgetAdapter --> Reliable
     Reliable --> Handler
     Handler --> Turn
     Handler --> Classifier
