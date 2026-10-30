@@ -5,7 +5,7 @@
 
 ## Context
 
-Collaborators must be able to drive the system from Slack: create a request, add information, find it, get its status (brief, section 3). The project runs on the development machine, with no public address ([decision 002](002-runtime-and-database.md)). The agent decides which tools to call, but the answer sent to the sender is written by code, and the tools are bound to the verified sender ([decision 003](003-agent-tools-security.md)).
+Collaborators must be able to drive the system from Slack: create a request, add information, find it, get its status (brief, section 3). The project runs on the development machine, with no public address ([decision 002](002-runtime-and-database.md)). The agent decides which tools to call, its answer is checked by code before it is sent ([decision 009](009-agent-answers.md)), and the tools are bound to the verified sender ([decision 003](003-agent-tools-security.md)).
 
 ## How Slack reaches the server
 
