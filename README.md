@@ -41,13 +41,13 @@ The business core holds the data model and the request operations, with no depen
 
 Each message is first classified by a separate call to the model, which gives its type, priority, title and summary, with a confidence read from the model's token probabilities. A request waits for a human review when this confidence is low, when its project is unclear or when its sender is unverified. How a message is handled, the types and the measured quality are described in [`docs/agent.md`](docs/agent.md).
 
-The agent works on requests only through ten typed tools: `identify_contact`, `identify_project`, `create_request`, `request_clarification`, `update_request`, `find_request`, `list_project_requests`, `get_request_status`, `add_message_to_request` and `search_requests`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
+The agent works on requests only through twelve typed tools: `identify_contact`, `identify_project`, `create_request`, `request_clarification`, `update_request`, `find_request`, `list_project_requests`, `list_my_requests`, `get_request_status`, `add_message_to_request`, `search_requests` and `forward_to_team`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
 
 - The tools are built for each message, bound to its sender in the code. They are not registered on the Mastra server, so its HTTP API cannot run them, and neither the model nor a client can change who they act for.
 - A verified sender reaches only the requests of the projects they work on, and the requests they made. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
 - The project is identified by fixed rules before the model runs: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the result is ambiguous and the model cannot pick one at random.
-- The model makes at most 5 calls per message, tool inputs have bounded sizes, a message is filed only once, and every change is written to the request history.
-- The answer to the sender is written by the code from what the tools did, never by the model. A message the agent leaves unhandled is filed for a review, so none is lost.
+- The model makes at most 8 calls per message, tool inputs have bounded sizes, a message is filed only once, and every change is written to the request history.
+- The agent writes the answer, and the code checks it before it is sent: no request that no tool returned, no codes, no promise that nobody keeps, no false claim that a question was passed to the team. When no answer passes, the code writes it from what the tools did. A question the data cannot answer is passed to the team, and a message the agent leaves unhandled is filed for a review, so none is lost.
 - The application connects to the database with the `request_agent_app` role, which cannot delete rows, change the schema or rewrite the history.
 
 The parts of the system, the path of a message and how to add a channel are described in [`docs/architecture.md`](docs/architecture.md). The reasons behind the main technical choices are recorded in [`docs/decisions/`](docs/decisions/).
@@ -61,7 +61,7 @@ The parts of the system, the path of a message and how to add a channel are desc
 | Ollama  | 0.40.11 | Version tested. Older versions can refuse recent models (0.40.3 does)                      |
 | Docker  | 29.1.3  | Version tested, with Docker Compose 2.40.3. Runs the database                              |
 
-The `ornith:9b` model takes 5.6 GB and needs about 6 GB of free RAM. It runs on the CPU when no GPU is available, which makes each answer take from a few seconds to about a minute and a half.
+The `ornith:9b` model takes 5.6 GB and needs about 6 GB of free RAM. It runs on the CPU when no GPU is available, which makes each answer take 2 to 7 minutes, as measured on the development machine.
 
 ## Installation
 
@@ -183,7 +183,7 @@ The agent connects to Slack in Socket Mode: the server opens the connection, so 
 5. Start the server with `pnpm dev`. The log shows `Slack adapter listening`.
 6. In Slack, invite the bot to a channel with `/invite @Request agent`, then mention it, or send it a direct message.
 
-The agent handles mentions, direct messages, and replies in the threads it already takes part in. It ignores the other messages of a channel, without storing them. It adds 👀 to a message it handles, then answers in its thread, usually 2 to 4 minutes later on a CPU.
+The agent handles mentions, direct messages, and replies in the threads it already takes part in. It ignores the other messages of a channel, without storing them. It adds 👀 to a message it handles, then answers in its thread, usually 2 to 7 minutes later on a CPU.
 
 A Slack user only gets rights when a contact with their Slack member ID exists in the database (`contacts.slack_user_id`). A channel dedicated to a project is declared in `project_channels`, with the channel ID.
 
@@ -263,9 +263,12 @@ Request-agent/
 │               ├── index.ts        Mastra entry point: registers the agent
 │               ├── agents/
 │               │   ├── request-agent.ts   Agent and its instructions
-│               │   └── handle-message.ts  Runs the agent on one message, with its tools
+│               │   ├── handle-message.ts  Runs the agent on one message, with its tools
+│               │   ├── answer-check.ts    Checks the answer of the agent before it is sent
+│               │   └── reply.ts           Answer written by code when no answer passes
 │               └── tools/
-│                   └── request-tools.ts   The ten request tools
+│                   ├── request-tools.ts   The twelve request tools
+│                   └── explain.ts         Codes of the database in plain words
 ├── packages/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
@@ -327,7 +330,7 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 - Slack messages and emails are handled one at a time. A message left unhandled by a restart is handled again at the next start.
 - Duplicates are found among requests sharing words or spelling with the message: a rewording with no word in common, such as "CB" for "carte bancaire", is missed.
 - Attached files are described (name, type, size) but their content is not stored.
-- Answers are written in French only.
+- Answers are written by a small local model. The check blocks codes, promises, unknown requests and false claims of forwarding, but a clumsy sentence can still pass. The system records no assignee and no planned date: questions about them are passed to the team.
 - The Mastra server API has no authentication. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere. The web interface of the team has its own accounts.
 - The web interface refuses sign-in for 15 minutes after 5 failures for an email. This count is kept in memory: a restart clears it.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
