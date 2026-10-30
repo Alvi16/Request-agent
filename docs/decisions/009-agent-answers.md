@@ -34,6 +34,7 @@ Until now, the answer to the sender was written by code from what the tools did,
 | Promises that nobody keeps                                                    | "Vous serez informé", "Ils examineront la demande et procéderont à la clôture", "La priorité sera mise à jour en critique" |
 | Saying the question was passed to the team when it was not                    | "Je transmets votre question" without a call to `forward_to_team`                                                          |
 | Saying "tu" to the sender                                                     | "Ils te diront qui est en charge"                                                                                          |
+| Calling a request "en cours" when no request is in progress                   | "Elle est toujours en cours de traitement", for a new request                                                              |
 | A title such as Madame or Monsieur, which assumes how the sender is addressed | "Madame De Souza, je ne trouve pas de demande liée à votre message", in the real Gmail test                                |
 | An empty answer, or one longer than 3000 characters                           |                                                                                                                            |
 
@@ -52,7 +53,10 @@ The rules were checked on every real answer collected during the measures: they 
 With `ornith:9b` on the development machine, CPU only:
 
 - The first measure of the real agent, on 13 new questions, gave 6 right answers. It showed the problems fixed above: follow-ups not added to their request, questions passed to the team on a new request instead of the existing one, promises in the future tense, codes in lower case, and text written next to tool calls being sent.
-- An answer takes 2 to 7 minutes. The model reads about 12 tokens per second and writes 2 to 3. The first call of the agent reads about 2700 tokens: the instructions, the twelve tools and the information about the message. Later steps of the same message reuse what was already read and take under 1 minute each.
+- A second measure, on 8 questions after those fixes, kept every follow-up with its request and filed no request twice. Two answers were right as written: the list of the sender's requests, and "Je ne trouve pas de demande REQ-0003" for a request of another client. Four were right but with a flaw: a new request called "en cours", promises with "qui" or "celle-ci", or a bare "Votre question a été transmise à l'équipe". For the last two, the code wrote the answer. The check now rejects the flaws found, and the answer written by code gives the request and its status.
+- An answer takes 2 to 8 minutes. The model reads about 12 tokens per second and writes 2 to 3. The first call of the agent reads about 2700 tokens: the instructions, the twelve tools and the information about the message. Later steps of the same message reuse what was already read and take under 1 minute each.
+
+The model takes about 6 GB of memory. During the measures, Linux stopped it six times for lack of memory while web browsers were open on the same 16 GB machine. The demonstration needs the browsers closed, except one tab.
 
 ## Consequences
 
