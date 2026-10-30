@@ -36,7 +36,7 @@ The channel adapter decides whether the sender is verified, never the model:
 - **Slack:** the request signature (HMAC-SHA256 with the signing secret, at most five minutes old, compared in constant time), or the app token in Socket Mode.
 - **Email:** `dmarc=pass` in the `Authentication-Results` header added by the receiving mail provider, recognized by its own `authserv-id`. RFC 8601 warns that the same header can be forged when it comes from elsewhere. DMARC is required because it checks that the `From` domain matches the authenticated domain.
 
-A verified sender who is a known contact gets the twelve tools, limited by the access rule. Anyone else only gets `identify_contact`, `identify_project` and `create_request`: the message is filed and waits for a human review, and nothing existing is read or changed. The details of each check are implemented with each channel.
+A verified sender who is a known contact gets the thirteen tools, limited by the access rule: `search_knowledge_base` only reads the help articles of the projects they work on ([decision 010](010-knowledge-base.md)). Anyone else only gets `identify_contact`, `identify_project` and `create_request`: the message is filed and waits for a human review, and nothing existing is read or changed. The details of each check are implemented with each channel.
 
 ## Limits on the model
 
