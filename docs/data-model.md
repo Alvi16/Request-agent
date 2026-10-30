@@ -48,6 +48,14 @@ A person who writes to the agent.
 
 A contact has at least an email address or a Slack user ID.
 
+A real person who writes by email is registered, with their organization and projects, by:
+
+```bash
+pnpm contact:add --email emma.petit@example.com --name "Emma Petit" --organization Acme --project SHOP
+```
+
+`--project` can be repeated. An unknown organization or project is refused, with the list of the known ones. Running it again updates the name and organization and adds the projects.
+
 ### `projects`
 
 A project followed by the company.
@@ -166,6 +174,18 @@ A signed-in session of the web interface.
 | `revoked_at` | When the person signed out                                              |
 
 Rows are never deleted, since the application role cannot delete: a session that signed out is marked as revoked.
+
+### `mailbox_cursors`
+
+How far the agent has read an IMAP mailbox, so it finds the new emails even when a person already opened them in their mail client.
+
+| Column         | Description                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| `mailbox`      | The account, server and folder, such as `imap://agent@example.com@imap.example.com/INBOX` |
+| `uid_validity` | UIDVALIDITY of the folder when the cursor was saved                                       |
+| `last_uid`     | UID of the last email handed over to the agent                                            |
+
+It is not linked to the other tables.
 
 ## Conventions
 

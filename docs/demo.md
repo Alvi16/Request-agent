@@ -77,6 +77,21 @@ pnpm demo:email --from nouveau.client@inconnu.example --subject "Facture introuv
 
 The message is filed and waits for a review, with the reasons "Projet inconnu" and "Expéditeur non vérifié". The answer says that a person of the team will check it.
 
+### With real emails, on Gmail
+
+When the agent uses its Gmail account (README, "With Gmail"), `pnpm demo:email` is not used: people write from their own mailbox.
+
+1. Register the person who will write, here for the PORTAL project of Globex:
+
+   ```bash
+   pnpm contact:add --email your.address@gmail.com --name "Your Name" --organization Globex --project PORTAL
+   ```
+
+2. From that mailbox, send to the address of the agent an email such as "Bonjour, sur le portail client, le lien « mot de passe oublié » n'envoie plus aucun email de réinitialisation depuis ce matin."
+3. The answer of the agent arrives in the same thread, with the request reference in its subject, 2 to 4 minutes later on a CPU.
+
+The sender is verified by Gmail (DMARC), so `EMAIL_TRUST_LOCAL_SENDERS` is not needed. The request shows the same details as above in the web interface.
+
 ## 4. Slack → Agent → Request
 
 The agent only gives rights to a Slack member who is a known contact. For the demonstration, link your Slack member ID to the fictitious contact Alice Martin, and your test channel to the SHOP project:

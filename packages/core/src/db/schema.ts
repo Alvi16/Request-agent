@@ -1,5 +1,6 @@
 import { type SQL, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   customType,
@@ -332,3 +333,15 @@ export const staffSessions = pgTable(
   },
   (t) => [index("staff_sessions_contact_id_idx").on(t.contactId)],
 );
+
+// How far the agent has read an IMAP mailbox: the last UID it handed over, valid as long as the
+// UIDVALIDITY of the mailbox does not change (RFC 9051). Emails are found by UID, not by the
+// \Seen flag, so an email that a person opened in their mail client before the agent is not lost.
+export const mailboxCursors = pgTable("mailbox_cursors", {
+  // The account and folder, such as imap://agent@example.com@imap.example.com/INBOX.
+  mailbox: text("mailbox").primaryKey(),
+  // Both are unsigned 32-bit numbers, beyond the range of integer.
+  uidValidity: bigint("uid_validity", { mode: "number" }).notNull(),
+  lastUid: bigint("last_uid", { mode: "number" }).notNull(),
+  updatedAt: updatedAt(),
+});

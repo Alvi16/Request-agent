@@ -104,7 +104,8 @@ cp .env.example .env
 | `EMAIL_SECURE`                                                             | `true` to connect with TLS, as real mail servers require. Defaults to `true`                                        | `false` (local mail server)                                                 |
 | `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender | `mx.google.com`                                                             |
 | `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine      | `true`                                                                      |
-| `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server. The tests empty it                                                  | `agent-test`, `change-me-mail-test`                                         |
+| `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server, even when the agent uses Gmail. The tests empty it                  | `agent-test`, `change-me-mail-test`                                         |
+| `TEST_EMAIL_HOST`, `TEST_EMAIL_IMAP_PORT`, `TEST_EMAIL_SMTP_PORT`          | Optional. Server of the tests' mailbox, by default the local mail server                                            | `127.0.0.1`, `3143`, `3025`                                                 |
 | `WEB_HOST`, `WEB_PORT`                                                     | Optional. Address and port of the web interface. Open it to the network only behind HTTPS                           | `127.0.0.1`, `4112` (default)                                               |
 | `WEB_TIME_ZONE`                                                            | Optional. Time zone of the dates shown in the web interface, as an IANA name                                        | `Europe/Paris` (default)                                                    |
 
@@ -191,7 +192,38 @@ A Slack user only gets rights when a contact with their Slack member ID exists i
 
 The agent watches its mailbox over IMAP and answers over SMTP. With the values of `.env.example`, it uses the local mail server started by `pnpm db:up`, with no account to create: start the server with `pnpm dev`, and the log shows `Email adapter listening`.
 
-Any mail client can write to the agent on the local mail server, at `127.0.0.1`, SMTP port `3025` and IMAP port `3143`. It accepts mail for any address, and creates a mailbox for each recipient, whose login and password are its address.
+Any mail client can write to the agent on the local mail server, at `127.0.0.1`, SMTP port `3025` and IMAP port `3143`. It accepts mail for any address, and creates a mailbox for each recipient, whose login and password are its address. Only this machine can reach it: the tests keep using it.
+
+### With Gmail
+
+For people to write to the agent from their own mailbox, the agent gets a Gmail account of its own. It handles and answers every email of its inbox, so it must never be a personal mailbox.
+
+1. Create the Gmail account of the agent.
+2. Turn on 2-Step Verification for that account, at <https://myaccount.google.com/signinoptions/twosv>.
+3. Create an app password at <https://myaccount.google.com/apppasswords>. Google refuses the account password itself over IMAP and SMTP.
+4. In `.env`, set the email variables as below, with the app password written without spaces:
+
+   ```dotenv
+   EMAIL_USER=the-agent-address@gmail.com
+   EMAIL_PASSWORD=the-app-password
+   EMAIL_ADDRESS=the-agent-address@gmail.com
+   EMAIL_IMAP_HOST=imap.gmail.com
+   EMAIL_IMAP_PORT=993
+   EMAIL_SMTP_HOST=smtp.gmail.com
+   EMAIL_SMTP_PORT=465
+   EMAIL_SECURE=true
+   EMAIL_TRUSTED_AUTHSERV_ID=mx.google.com
+   ```
+
+5. Register each person who writes to the agent, with their organization and projects, so their emails are recognized:
+
+   ```bash
+   pnpm contact:add --email emma.petit@example.com --name "Emma Petit" --organization Acme --project SHOP
+   ```
+
+At its first start, the agent reads the unread emails of the inbox: mark the welcome emails of Google as read before. After that, it also handles the emails that a person opened in Gmail before it read them. Changing the app password, or the account password, which revokes app passwords, requires updating `EMAIL_PASSWORD`. The choices are explained in [decision 006](docs/decisions/006-email-connection.md).
+
+### What the agent does with an email
 
 The agent handles each new email, keeps it with its attachments' descriptions, and answers in the same thread, with the request reference in the subject. A reply is attached to its conversation through its `In-Reply-To` and `References` headers, and the history quoted in a reply is not given to the model. Automatic emails, such as out-of-office replies, mailing lists or bounces, are kept but neither handled nor answered, and the answers of the agent are marked `Auto-Submitted: auto-replied`, so robots do not answer each other.
 
@@ -270,13 +302,16 @@ Request-agent/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
 │       ├── eval/                   Labeled messages to measure the classifier
-│       ├── scripts/                Migration, demo data, team accounts and evaluation commands
+│       ├── scripts/                Migration, demo data, team accounts, contacts and evaluation commands
 │       ├── src/
 │       │   ├── env.ts              Environment variables validation
 │       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
 │       │   ├── messages/
 │       │   │   ├── inbox.ts        Stores channel messages once, with their conversation
-│       │   │   └── handling.ts     Which messages are handled, and the failed attempts
+│       │   │   ├── handling.ts     Which messages are handled, and the failed attempts
+│       │   │   └── mailbox-cursor.ts  How far the agent has read its mailbox
+│       │   ├── contacts/
+│       │   │   └── save-contact.ts Registers a person who writes to the agent
 │       │   ├── classification/
 │       │   │   ├── taxonomy.ts     Definitions of the request types and priorities
 │       │   │   ├── classifier.ts   Classification call to Ollama, with its confidence

@@ -1,4 +1,5 @@
 import type { IMastraLogger } from "@mastra/core/logger";
+import { getMailboxCursor, type MailboxCursor, saveMailboxCursor } from "@request-agent/core";
 
 import type { ChannelHandler } from "../channel-handler";
 import { loadEmailEnv } from "../config";
@@ -35,8 +36,14 @@ export async function startEmailIfConfigured(
     },
   };
   const { db, handle } = handler();
+  // Another account or server starts with its own cursor.
+  const mailboxName = `imap://${env.EMAIL_USER}@${env.EMAIL_IMAP_HOST}/INBOX`;
+  const cursorStore = {
+    load: () => getMailboxCursor(db, mailboxName),
+    save: (cursor: MailboxCursor) => saveMailboxCursor(db, mailboxName, cursor),
+  };
   await startEmailAdapter({
-    mailbox: imapMailbox(settings, errorLogger),
+    mailbox: imapMailbox(settings, errorLogger, cursorStore),
     sender: smtpSender(settings),
     db,
     handle,

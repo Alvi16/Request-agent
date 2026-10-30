@@ -20,6 +20,18 @@ describe("senderTrust", () => {
     expect(senderTrust(email, trusted)).toBe("VERIFIED");
   });
 
+  it("reads the header that Gmail writes, with its comments and its other methods", async () => {
+    // As received on 2026-10-30 by the Gmail account of the agent, with the addresses replaced.
+    const email = await emailWith({
+      "Authentication-Results":
+        "mx.google.com;\r\n       dkim=pass header.i=@acme.example header.s=20260707 header.b=jf1ehd1E;\r\n       spf=pass (google.com: domain of bounce@mail.acme.example designates 209.85.220.69 as permitted sender) smtp.mailfrom=bounce@mail.acme.example;\r\n       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=acme.example;\r\n       dara=pass header.i=@gmail.com",
+    });
+
+    expect(senderTrust(email, { trustedAuthservId: "mx.google.com", trustAllSenders: false })).toBe(
+      "VERIFIED",
+    );
+  });
+
   it("ignores a result written by another server, as a sender can forge one", async () => {
     const email = await emailWith({
       "Authentication-Results": "mx.evil.example; dmarc=pass header.from=acme.example",
@@ -76,5 +88,17 @@ describe("isAutomatic", () => {
     expect(isAutomatic(await emailWith({}, "MAILER-DAEMON@acme.example"), own)).toBe(true);
     expect(isAutomatic(await emailWith({}, "no-reply@acme.example"), own)).toBe(true);
     expect(isAutomatic(await emailWith({}, own), own)).toBe(true);
+  });
+
+  it("recognizes a no-reply address with a prefix or a tag", async () => {
+    expect(isAutomatic(await emailWith({}, "billing-noreply@acme.example"), own)).toBe(true);
+    expect(isAutomatic(await emailWith({}, "billing.do-not-reply@acme.example"), own)).toBe(true);
+    expect(isAutomatic(await emailWith({}, "no-reply+alerts@acme.example"), own)).toBe(true);
+  });
+
+  it("lets through people whose address only contains a robot word", async () => {
+    expect(isAutomatic(await emailWith({}, "noreen.ply@acme.example"), own)).toBe(false);
+    expect(isAutomatic(await emailWith({}, "jean.postmaster@acme.example"), own)).toBe(false);
+    expect(isAutomatic(await emailWith({}, "replynow@acme.example"), own)).toBe(false);
   });
 });
