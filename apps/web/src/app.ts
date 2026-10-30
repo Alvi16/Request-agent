@@ -68,7 +68,7 @@ export function createWebApp(options: WebAppOptions) {
       contentSecurityPolicy: {
         defaultSrc: ["'none'"],
         styleSrc: ["'self'"],
-        imgSrc: ["'self'", "data:"],
+        imgSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
         baseUri: ["'none'"],

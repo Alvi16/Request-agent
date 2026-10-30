@@ -130,8 +130,8 @@ button.primary { color: #ffffff; background: var(--primary); border-color: var(-
 button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(124, 93, 250, 0.4); }
 
-/* Sign-in: a frosted glass card over glass spheres drawn in an SVG data URI, which the content
-   security policy allows as an image. After the generic form rules, which would otherwise win. */
+/* Sign-in: neon arcs behind a dark glass card. After the generic form rules, which would
+   otherwise win over these ones. */
 body:has(.sign-in) {
   min-height: 100vh;
   width: 100vw;
@@ -139,20 +139,53 @@ body:has(.sign-in) {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #060608 !important;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><radialGradient id="g1" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="%23888899" stop-opacity="0.8"/><stop offset="40%" stop-color="%2322222b" stop-opacity="0.9"/><stop offset="100%" stop-color="%2308080a" stop-opacity="0.95"/></radialGradient><radialGradient id="g2" cx="30%" cy="25%" r="70%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.4"/><stop offset="25%" stop-color="%23444455" stop-opacity="0.6"/><stop offset="80%" stop-color="%230f0f14" stop-opacity="0.95"/></radialGradient><filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="720" cy="380" r="180" fill="url(%23g1)"/><circle cx="720" cy="380" r="179" fill="none" stroke="%23ffffff" stroke-opacity="0.25" stroke-width="1.5"/><circle cx="440" cy="520" r="130" fill="url(%23g2)"/><circle cx="440" cy="520" r="129" fill="none" stroke="%23ffffff" stroke-opacity="0.2" stroke-width="1"/><circle cx="380" cy="280" r="70" fill="url(%23g1)" opacity="0.8"/><circle cx="780" cy="180" r="45" fill="url(%23g2)" opacity="0.7"/><circle cx="330" cy="390" r="22" fill="url(%23g2)" opacity="0.9"/></svg>');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background-color: #030308 !important;
   position: relative;
+  overflow: hidden;
 }
-/* No sidebar on this page: the content is centered, above the spheres. */
+/* The arcs overflow the screen: the page itself, not only the viewport, cuts them at its edges. */
+html:has(.sign-in) { overflow: hidden; }
+body:has(.sign-in)::before, body:has(.sign-in)::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+/* Large arc, top right. */
+body:has(.sign-in)::before {
+  width: 700px;
+  height: 700px;
+  top: -250px;
+  right: -100px;
+  border: 4px solid #1e6fff;
+  box-shadow:
+    0 0 20px #0055ff,
+    inset 0 0 15px #0055ff,
+    0 0 50px rgba(0, 85, 255, 0.4);
+  background: radial-gradient(circle at 30% 30%, rgba(10, 20, 60, 0.6), transparent 70%);
+  filter: drop-shadow(0 0 12px #0066ff);
+}
+/* Arc, bottom left. */
+body:has(.sign-in)::after {
+  width: 650px;
+  height: 650px;
+  bottom: -220px;
+  left: -80px;
+  border: 4px solid #0055ff;
+  box-shadow:
+    0 0 20px #0044cc,
+    inset 0 0 15px #0044cc,
+    0 0 50px rgba(0, 68, 204, 0.4);
+  background: radial-gradient(circle at 70% 70%, rgba(10, 20, 50, 0.5), transparent 70%);
+  filter: drop-shadow(0 0 10px #0055ff);
+}
+/* No sidebar on this page: the content is centered, above the arcs. */
 body:has(.sign-in) main {
   position: relative;
   z-index: 10;
   flex: 0 1 auto;
   width: 100%;
-  max-width: 472px;
+  max-width: 412px;
   margin: 0;
   padding: 16px;
 }
@@ -160,43 +193,60 @@ body:has(.sign-in) main {
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 440px;
-  padding: 44px 36px;
-  background: rgba(18, 18, 26, 0.45) !important;
-  backdrop-filter: blur(25px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  max-width: 380px;
+  padding: 40px 32px;
+  background: rgba(8, 12, 28, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .sign-in h1 {
-  font-size: 22px;
-  font-weight: 500;
   color: #ffffff;
+  font-size: 26px;
+  font-weight: 600;
   margin-bottom: 28px;
-  letter-spacing: -0.3px;
+  text-align: center;
 }
-.sign-in input {
+/* The fields sit inside their labels, which the centered card would otherwise shrink. */
+.sign-in label { width: 100%; }
+.sign-in input[type="email"],
+.sign-in input[type="password"] {
   width: 100%;
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(10, 15, 35, 0.6) !important;
+  border: 1px solid rgba(0, 102, 255, 0.35) !important;
   color: #ffffff !important;
-  padding: 12px 16px;
-  border-radius: 6px;
+  padding: 12px 20px;
+  border-radius: 30px !important;
   margin-bottom: 16px;
+  font-size: 14px;
   box-sizing: border-box;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.sign-in input:focus {
+  border-color: #0066ff !important;
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.4);
 }
 .sign-in button {
   width: 100%;
   background: #ffffff !important;
-  color: #000000 !important;
+  color: #080c1c !important;
+  font-size: 15px;
   font-weight: 600;
   padding: 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 30px !important;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 16px;
+  transition: transform 0.1s ease, background 0.2s ease;
 }
+.sign-in button:hover { background: #e6e6e6 !important; }
+
 /* Filters: a dark card above the table. */
 .filters {
   display: flex;
