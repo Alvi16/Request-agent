@@ -30,6 +30,11 @@ export {
   type KnowledgeEnv,
 } from "./env.ts";
 export {
+  createOllamaEmbedder,
+  type Embedder,
+  type OllamaEmbedderOptions,
+} from "./knowledge/embedder.ts";
+export {
   classifyTurn,
   conversationContext,
   isNotARequest,
