@@ -131,7 +131,20 @@ The agent adds 👀 to the message, then answers in its thread with the referenc
 
 5. Reply in the thread, with the reference of the answer: `@Request agent où en est la demande REQ-… ?`. The agent adds the message to the request instead of filing a new one, and answers with its status.
 
-## 5. Validate a decision in the web interface
+## 5. Widget → Agent → Request
+
+1. Add to `.env` the variables of the widget, described in [`widget.md`](widget.md): `WIDGET_ALLOWED_ORIGINS=http://localhost:4114`, a `WIDGET_IDENTITY_SECRET` made with `openssl rand -hex 32`, and an absolute `ATTACHMENTS_DIR`. Restart `pnpm dev` and `pnpm web`: the log of the agent server shows `Widget listening`.
+2. Start the demo page of a fictitious customer portal, signed in as Bruno Leroy:
+
+   ```bash
+   pnpm demo:widget
+   ```
+
+3. Open `http://localhost:4114`, click **Besoin d'aide ?**, choose **Signaler un bug**, write "Depuis ce matin, le bouton Valider de la page Commandes ne fait plus rien quand je clique dessus.", attach a file or capture the screen, and send.
+4. The widget shows the message and waits for the agent. After a few minutes, it shows the answer of the agent and the request, with its reference and status.
+5. In the web interface, the request shows the source Widget, the project PORTAL from the widget of the portal, the author Bruno Leroy, and the file, which can be downloaded.
+
+## 6. Validate a decision in the web interface
 
 1. Open **À revoir**: Alice's email and the unknown sender's are listed, with their reasons.
 2. Open Alice's request, choose the project SHOP under **Valider ou corriger**, and select **Valider la demande**.
