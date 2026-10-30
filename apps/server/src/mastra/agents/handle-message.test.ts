@@ -1,4 +1,10 @@
-import { type Classification, type DuplicateJudge, events, requests } from "@request-agent/core";
+import {
+  type Classification,
+  type DuplicateJudge,
+  events,
+  type KnowledgeHit,
+  requests,
+} from "@request-agent/core";
 import {
   alice,
   bruno,
@@ -44,9 +50,11 @@ async function run(
     judgeDuplicate?: DuplicateJudge;
     text?: string;
     thread?: string;
+    articles?: KnowledgeHit[];
   } = {},
 ) {
   const model = scriptedModel(steps);
+  const searches: { actor: string; question: string }[] = [];
   const messageId = await storeMessage(getDatabase(), {
     sender,
     bodyText: options.text ?? "Le portail ne répond plus.",
@@ -60,9 +68,13 @@ async function run(
       classify: fixedClassifier(options.classification),
       judgeDuplicate: options.judgeDuplicate ?? noDuplicate,
       reviewThreshold: testReviewThreshold,
+      searchKnowledge: (actor, question) => {
+        searches.push({ actor: actor.kind, question });
+        return Promise.resolve(options.articles ?? []);
+      },
     },
   );
-  return { model, result, messageId };
+  return { model, result, messageId, searches };
 }
 
 describe("handleMessage", () => {
@@ -159,6 +171,7 @@ describe("handleMessage", () => {
       "list_my_requests",
       "list_project_requests",
       "request_clarification",
+      "search_knowledge_base",
       "search_requests",
       "update_request",
     ]);
@@ -420,6 +433,47 @@ describe("handleMessage", () => {
     });
   });
 
+  it("answers a support question from a help article, without filing a request", async () => {
+    const question = "Comment ajouter un utilisateur au portail ?";
+    const answer =
+      "Un administrateur ouvre Administration > Comptes et choisit « Inviter un compte ».";
+    const { result, searches } = await run(
+      [{ toolCalls: [{ tool: "search_knowledge_base", input: { question } }] }, { text: answer }],
+      bruno,
+      {
+        text: question,
+        classification: { type: "SUPPORT" },
+        articles: [
+          {
+            project: "PORTAL",
+            title: "Ajouter un utilisateur au portail",
+            body: "Un administrateur ouvre Administration > Comptes, « Inviter un compte ».",
+            relevance: 0.7,
+          },
+        ],
+      },
+    );
+
+    expect(searches).toEqual([{ actor: "contact", question }]);
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+    expect(await getDatabase().select().from(requests)).toHaveLength(0);
+  });
+
+  it("files a support question that no help article answers", async () => {
+    const question = "Comment exporter les données du portail ?";
+    const { result } = await run(
+      [
+        { toolCalls: [{ tool: "search_knowledge_base", input: { question } }] },
+        { text: "Aucun article ne répond à cette question." },
+      ],
+      bruno,
+      { text: question, classification: { type: "SUPPORT" } },
+    );
+
+    expect(result.filedBySystem).toBe(true);
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
+  });
+
   it("writes nothing when the classification fails", async () => {
     const messageId = await storeMessage(getDatabase(), { sender: bruno, bodyText: "Panne" });
 
@@ -432,6 +486,7 @@ describe("handleMessage", () => {
           classify: () => Promise.reject(new Error("Ollama is down")),
           judgeDuplicate: noDuplicate,
           reviewThreshold: 0.8,
+          searchKnowledge: () => Promise.resolve([]),
         },
       ),
     ).rejects.toThrow("Ollama is down");
