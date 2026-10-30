@@ -131,6 +131,7 @@ export {
   changeStatusInput,
   consolePageSize,
   getRequestRecord,
+  getStoredAttachment,
   listProjects,
   listRequests,
   listRequestsInput,
