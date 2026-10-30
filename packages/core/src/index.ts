@@ -23,9 +23,11 @@ export {
   loadAppDatabaseEnv,
   loadClassifierEnv,
   loadDatabaseEnv,
+  loadKnowledgeEnv,
   type AppDatabaseEnv,
   type ClassifierEnv,
   type DatabaseEnv,
+  type KnowledgeEnv,
 } from "./env.ts";
 export {
   classifyTurn,

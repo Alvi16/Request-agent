@@ -27,7 +27,16 @@ const classifierEnvSchema = z.object({
   CLASSIFICATION_REVIEW_THRESHOLD: z.coerce.number().min(0).max(1).default(defaultReviewThreshold),
 });
 
+// Model that turns help articles and questions into vectors, chosen in decision 010.
+const defaultEmbeddingModel = "qwen3-embedding:0.6b";
+
+const knowledgeEnvSchema = z.object({
+  OLLAMA_BASE_URL: z.url(),
+  OLLAMA_EMBEDDING_MODEL: z.string().min(1).default(defaultEmbeddingModel),
+});
+
 export type ClassifierEnv = z.infer<typeof classifierEnvSchema>;
+export type KnowledgeEnv = z.infer<typeof knowledgeEnvSchema>;
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type AppDatabaseEnv = z.infer<typeof appDatabaseEnvSchema>;
 export type TestDatabaseEnv = z.infer<typeof testDatabaseEnvSchema>;
@@ -54,4 +63,8 @@ export function loadTestDatabaseEnv(source: NodeJS.ProcessEnv = process.env): Te
 
 export function loadClassifierEnv(source: NodeJS.ProcessEnv = process.env): ClassifierEnv {
   return parseEnv(classifierEnvSchema, source);
+}
+
+export function loadKnowledgeEnv(source: NodeJS.ProcessEnv = process.env): KnowledgeEnv {
+  return parseEnv(knowledgeEnvSchema, source);
 }

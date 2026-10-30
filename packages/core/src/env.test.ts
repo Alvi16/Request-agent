@@ -4,6 +4,7 @@ import {
   loadAppDatabaseEnv,
   loadClassifierEnv,
   loadDatabaseEnv,
+  loadKnowledgeEnv,
   loadTestDatabaseEnv,
 } from "./env.ts";
 
@@ -64,5 +65,19 @@ describe("loadClassifierEnv", () => {
     expect(() => loadClassifierEnv({ ...ollama, CLASSIFICATION_REVIEW_THRESHOLD: "80" })).toThrow(
       /CLASSIFICATION_REVIEW_THRESHOLD/,
     );
+  });
+});
+
+describe("loadKnowledgeEnv", () => {
+  const base = { OLLAMA_BASE_URL: "http://127.0.0.1:11434/api" };
+
+  it("uses the embedding model chosen in decision 010 by default", () => {
+    expect(loadKnowledgeEnv(base).OLLAMA_EMBEDDING_MODEL).toBe("qwen3-embedding:0.6b");
+  });
+
+  it("reads another embedding model", () => {
+    expect(
+      loadKnowledgeEnv({ ...base, OLLAMA_EMBEDDING_MODEL: "bge-m3" }).OLLAMA_EMBEDDING_MODEL,
+    ).toBe("bge-m3");
   });
 });
