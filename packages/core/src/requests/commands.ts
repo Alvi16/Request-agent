@@ -372,6 +372,14 @@ export function forwardToTeam(
     if (requestId === undefined) {
       return fail("NOT_FOUND");
     }
+    // A message passes its question to the team once, even when the agent asks twice.
+    const [forwarded] = await tx
+      .select({ value: count() })
+      .from(events)
+      .where(and(eq(events.messageId, message.id), eq(events.type, "REVIEW_REQUESTED")));
+    if ((forwarded?.value ?? 0) > 0) {
+      return succeed(await loadView(tx, requestId));
+    }
     await tx.update(requests).set({ needsReview: true }).where(eq(requests.id, requestId));
     await tx.insert(events).values({
       requestId,
