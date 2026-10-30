@@ -43,12 +43,14 @@ async function run(
     classification?: Partial<Classification>;
     judgeDuplicate?: DuplicateJudge;
     text?: string;
+    thread?: string;
   } = {},
 ) {
   const model = scriptedModel(steps);
   const messageId = await storeMessage(getDatabase(), {
     sender,
     bodyText: options.text ?? "Le portail ne répond plus.",
+    thread: options.thread,
   });
   const result = await handleMessage(
     createRequestAgent(model),
@@ -296,6 +298,39 @@ describe("handleMessage", () => {
     expect(result.reply).toBe(
       "Votre message a été ajouté à la demande REQ-0001. La demande REQ-0001 est enregistrée, en attente de traitement.",
     );
+  });
+
+  it("adds a follow-up that the model answered without filing to the request of its conversation", async () => {
+    await run([{ toolCalls: [{ tool: "create_request", input: {} }] }], bruno, {
+      thread: "thread-portal",
+    });
+    const answer = "La demande REQ-0001, Portail inaccessible, est nouvelle.";
+
+    const { result, messageId } = await run([{ text: answer }], bruno, {
+      classification: { type: "STATUS_REQUEST" },
+      text: "Où en êtes-vous ?",
+      thread: "thread-portal",
+    });
+
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
+    const history = await getDatabase().select().from(events);
+    expect(
+      history.filter((event) => event.messageId === messageId).map((event) => event.type),
+    ).toEqual(["MESSAGE_ADDED"]);
+  });
+
+  it("files a new request that the model only looked up, instead of leaving it unfiled", async () => {
+    const { result } = await run(
+      [
+        { toolCalls: [{ tool: "search_requests", input: { query: "portail" } }] },
+        { text: "Aucune demande ne correspond." },
+      ],
+      bruno,
+    );
+
+    expect(result.filedBySystem).toBe(true);
+    expect(await getDatabase().select().from(requests)).toHaveLength(1);
   });
 
   it("answers a question that is not a request, and passes it to the team", async () => {

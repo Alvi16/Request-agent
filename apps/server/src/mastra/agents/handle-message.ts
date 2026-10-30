@@ -1,5 +1,6 @@
 import type { Agent } from "@mastra/core/agent";
 import {
+  addMessageToRequest,
   assessDuplicate,
   type ClassifiedTurn,
   type Classifier,
@@ -11,6 +12,7 @@ import {
   fileUnhandledMessage,
   findRequest,
   forwardToTeam,
+  isMessageFiled,
   isNotARequest,
   parseReference,
   prepareTurn,
@@ -100,13 +102,34 @@ function answerContext(
   return { knownReferences, forwarded };
 }
 
+// Types of a message about a request already made, which belongs with that request.
+const followUpTypes = new Set<ClassifiedTurn["classification"]["type"]>([
+  "FOLLOW_UP",
+  "STATUS_REQUEST",
+]);
+
+// A follow-up that the agent answered without filing it is added by code to the request of its
+// conversation, so that request keeps every message about it.
+async function keepFollowUp(db: Database, turn: ClassifiedTurn): Promise<ToolOutcome | undefined> {
+  if (!followUpTypes.has(turn.classification.type)) {
+    return undefined;
+  }
+  const linked = await findRequest(db, turn, {});
+  if (!linked.ok) {
+    return undefined;
+  }
+  const result = await addMessageToRequest(db, turn, { reference: linked.value.request.reference });
+  return { tool: "add_message_to_request", result };
+}
+
 // A question asked to the sender is the answer itself: the agent stops there.
 function askedForDetails(outcomes: ToolOutcome[]): boolean {
   return outcomes.some((o) => o.tool === "request_clarification" && o.result.ok);
 }
 
-// Files a message that the agent neither filed nor answered, so none is lost: as a request for a
-// person, or, for a question that is not a request, as a question passed to the team.
+// Files a message that is still filed under no request, so none is lost: as a request for a
+// person, or, for a question that is not a request and got no answer, as a question passed to the
+// team.
 async function fileForPerson(
   db: Database,
   turn: ClassifiedTurn,
@@ -164,8 +187,15 @@ export async function handleMessage(
   });
 
   const answer = result.finishReason === "tripwire" ? "" : toPlainText(result.text);
-  const acted = outcomes.some((outcome) => outcome.result.ok);
-  const filedBySystem = acted ? undefined : await fileForPerson(db, turn, answer);
+  let filed = await isMessageFiled(db, turn.messageId);
+  if (!filed) {
+    const kept = await keepFollowUp(db, turn);
+    if (kept?.result.ok === true) {
+      outcomes.push(kept);
+      filed = true;
+    }
+  }
+  const filedBySystem = filed ? undefined : await fileForPerson(db, turn, answer);
   return {
     reply: finalReply(answer, outcomes, filedBySystem),
     filedBySystem: filedBySystem !== undefined,
