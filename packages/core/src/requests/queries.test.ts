@@ -10,7 +10,13 @@ import {
   updateRequest,
 } from "./commands.ts";
 import type { Classification } from "../classification/classifier.ts";
-import { findRequest, getRequestStatus, listProjectRequests, searchRequests } from "./queries.ts";
+import {
+  findRequest,
+  getRequestStatus,
+  listContactRequests,
+  listProjectRequests,
+  searchRequests,
+} from "./queries.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
 
 const getDatabase = useTestDatabase();
@@ -195,6 +201,36 @@ describe("listProjectRequests", () => {
         limit: 10,
       }),
     ).toEqual({ ok: false, error: "PROJECT_NOT_FOUND" });
+  });
+});
+
+describe("listContactRequests", () => {
+  it("lists the requests the sender made or wrote in, most recent activity first", async () => {
+    const portal = await file(bruno, { type: "BUG", title: "Portail lent", projectKey: "PORTAL" });
+    await file(alice, { type: "BUG", title: "Panier vidé", projectKey: "SHOP" });
+    await addMessageToRequest(getAppDatabase(), await chloe(), { reference: portal });
+    const later = await file(bruno, { type: "BUG", title: "Export vide", projectKey: "PORTAL" });
+
+    const ofBruno = await listContactRequests(getAppDatabase(), await turnFor(bruno), {
+      limit: 10,
+    });
+    const ofChloe = await listContactRequests(getAppDatabase(), await chloe(), { limit: 10 });
+
+    expect(ofBruno.ok && ofBruno.value.map((request) => request.reference)).toEqual([
+      later,
+      portal,
+    ]);
+    expect(ofChloe.ok && ofChloe.value.map((request) => request.reference)).toEqual([portal]);
+  });
+
+  it("gives an unverified sender nothing", async () => {
+    await file(bruno, { type: "BUG", title: "Portail lent", projectKey: "PORTAL" });
+
+    expect(
+      await listContactRequests(getAppDatabase(), await turnFor(bruno, { trust: "UNVERIFIED" }), {
+        limit: 10,
+      }),
+    ).toEqual({ ok: false, error: "UNVERIFIED_SENDER" });
   });
 });
 

@@ -53,6 +53,7 @@ export {
   describeProject,
   findRequest,
   getRequestStatus,
+  listContactRequests,
   listProjectRequests,
   searchRequests,
   type ContactDescription,

@@ -66,6 +66,11 @@ export const listProjectRequestsInput = z.object({
   limit,
 });
 
+export const listContactRequestsInput = z.object({
+  status: z.enum(requestStatus.enumValues).optional(),
+  limit,
+});
+
 export const searchRequestsInput = z.object({
   query: z.string().trim().min(2).max(200),
   projectKey: projectKey.optional(),
@@ -78,5 +83,6 @@ export type ForwardToTeamInput = z.infer<typeof forwardToTeamInput>;
 export type UpdateRequestInput = z.infer<typeof updateRequestInput>;
 export type RequestReferenceInput = z.infer<typeof requestReferenceInput>;
 export type FindRequestInput = z.infer<typeof findRequestInput>;
+export type ListContactRequestsInput = z.infer<typeof listContactRequestsInput>;
 export type ListProjectRequestsInput = z.infer<typeof listProjectRequestsInput>;
 export type SearchRequestsInput = z.infer<typeof searchRequestsInput>;

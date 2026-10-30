@@ -1,10 +1,11 @@
-import { and, count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.ts";
 import { contacts, events, messages, organizations, projects, requests } from "../db/schema.ts";
 import { visibleRequests, worksOnProject } from "./access.ts";
 import type {
   FindRequestInput,
+  ListContactRequestsInput,
   ListProjectRequestsInput,
   RequestReferenceInput,
   SearchRequestsInput,
@@ -235,6 +236,36 @@ export async function listProjectRequests(
       eq(requests.projectId, projectId),
       input.status === undefined ? undefined : eq(requests.status, input.status),
     ) ?? eq(requests.projectId, projectId),
+  )
+    .orderBy(desc(requests.updatedAt), desc(requests.number))
+    .limit(input.limit);
+  return succeed(rows.map(toRequestView));
+}
+
+// Requests the sender made or wrote in, most recent activity first, among those they may reach.
+export async function listContactRequests(
+  db: Database,
+  turn: Turn,
+  input: ListContactRequestsInput,
+): Promise<Result<RequestView[], "UNVERIFIED_SENDER">> {
+  if (turn.actor.kind === "anonymous") {
+    return fail("UNVERIFIED_SENDER");
+  }
+  const wroteIn = db
+    .select({ id: messages.requestId })
+    .from(messages)
+    .where(and(eq(messages.authorContactId, turn.actor.contactId), isNotNull(messages.requestId)));
+  const involved = or(
+    eq(requests.requesterContactId, turn.actor.contactId),
+    inArray(requests.id, wroteIn),
+  );
+  const rows = await selectRequestViews(
+    db,
+    and(
+      involved,
+      visibleRequests(turn.actor),
+      input.status === undefined ? undefined : eq(requests.status, input.status),
+    ) ?? visibleRequests(turn.actor),
   )
     .orderBy(desc(requests.updatedAt), desc(requests.number))
     .limit(input.limit);
