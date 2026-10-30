@@ -108,6 +108,12 @@ const followUpTypes = new Set<ClassifiedTurn["classification"]["type"]>([
   "STATUS_REQUEST",
 ]);
 
+// Types of a message that only asks something, which needs no request of its own once answered.
+const questionTypes = new Set<ClassifiedTurn["classification"]["type"]>([
+  "STATUS_REQUEST",
+  "OTHER",
+]);
+
 // A follow-up that the agent answered without filing it is added by code to the request of its
 // conversation, so that request keeps every message about it.
 async function keepFollowUp(db: Database, turn: ClassifiedTurn): Promise<ToolOutcome | undefined> {
@@ -211,10 +217,13 @@ export async function handleMessage(
   if (answer === "") {
     await forwardUnanswered(db, turn, outcomes);
   }
-  // A message still filed under no request is filed for a person, so none is lost.
-  const filedBySystem = (await isMessageFiled(db, turn.messageId))
-    ? undefined
-    : await fileUnhandledMessage(db, turn);
+  // A message still filed under no request is filed for a person, so none is lost, unless it only
+  // asked a question that got its answer.
+  const answeredQuestion = answer !== "" && questionTypes.has(turn.classification.type);
+  const filedBySystem =
+    answeredQuestion || (await isMessageFiled(db, turn.messageId))
+      ? undefined
+      : await fileUnhandledMessage(db, turn);
   return {
     reply: finalReply(answer, outcomes, filedBySystem),
     filedBySystem: filedBySystem !== undefined,

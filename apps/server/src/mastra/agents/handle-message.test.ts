@@ -337,6 +337,19 @@ describe("handleMessage", () => {
     ).toEqual(["MESSAGE_ADDED"]);
   });
 
+  it("files no request for a question about requests that got its answer", async () => {
+    const answer = "Vous n'avez aucune demande en cours.";
+
+    const { result } = await run(
+      [{ toolCalls: [{ tool: "list_my_requests", input: {} }] }, { text: answer }],
+      bruno,
+      { classification: { type: "STATUS_REQUEST" }, text: "Quelles demandes ai-je en cours ?" },
+    );
+
+    expect(result).toEqual({ reply: answer, filedBySystem: false });
+    expect(await getDatabase().select().from(requests)).toHaveLength(0);
+  });
+
   it("files a new request that the model only looked up, instead of leaving it unfiled", async () => {
     const { result } = await run(
       [
