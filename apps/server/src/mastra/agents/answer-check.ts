@@ -55,7 +55,7 @@ const promises = [
   /\b(we|I)'ll\b/i,
   /\bthe team will\b/i,
   // Anything the team or the agent "will" do, in the future tense: "ils examineront".
-  /\b(l'équipe|ils|elles|nous|on)\s+(vous\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
+  /\b(l'équipe|ils|elles|nous|on)\s+(vous\s+|te\s+|t'|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
   // A change announced as certain: "la priorité sera mise à jour".
   /\b(sera|seront)\s+(\p{L}+\s+)?(mise?s?|modifiée?s?|changée?s?|fermée?s?|clôturée?s?|corrigée?s?|résolue?s?|traitée?s?|examinée?s?)\b/iu,
 ];
@@ -66,6 +66,10 @@ const forwardClaims = [
   /\bje (passe|transmets)\b/i,
   /\b(forwarded|passed (it |this |your [a-z]+ )?(on )?to the team)\b/i,
 ];
+
+// The sender is always addressed formally, with "vous". Letters with accents are letters too, so
+// "requête" does not hold the word "te".
+const informalAddress = /(?<!\p{L})(tu|te|ta|ton|tes|toi)(?!\p{L})|(?<!\p{L})t'/iu;
 
 function unknownReferences(text: string, known: Set<number>): string[] {
   return Array.from(text.matchAll(/REQ-\d{1,9}/gi), (match) => match[0].toUpperCase()).filter(
@@ -107,6 +111,9 @@ export function answerProblems(text: string, context: AnswerContext): string[] {
     problems.push(
       `It promises something the system does not do: "${promised.join('", "')}". Only state facts.`,
     );
+  }
+  if (informalAddress.test(answer)) {
+    problems.push('It says "tu" to the sender. Address the sender with "vous".');
   }
   if (!context.forwarded && forwardClaims.some((pattern) => pattern.test(answer))) {
     problems.push(

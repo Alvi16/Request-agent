@@ -68,6 +68,7 @@ describe("answerProblems", () => {
       "Ils examineront la demande.",
       "Nous procéderons à la clôture.",
       "La priorité sera mise à jour en critique par l'équipe.",
+      "Ils lui diront qui s'en occupe.",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
     }
@@ -83,11 +84,17 @@ describe("answerProblems", () => {
     }
   });
 
+  it("refuses to say tu to the sender", () => {
+    expect(answerProblems("Voici ta demande REQ-0006.", context)).toHaveLength(1);
+    expect(answerProblems("Je t'indique le statut.", context)).toHaveLength(1);
+  });
+
   it("accepts plain facts about what exists and what does not", () => {
     for (const answer of [
       "La demande REQ-0006 est nouvelle : personne de l'équipe n'a encore commencé dessus.",
       "Le système n'enregistre ni date prévue ni personne en charge pour cette demande.",
       "Elle a été classée en priorité haute automatiquement, à sa création.",
+      "Votre requête REQ-0006 a été notée.",
     ]) {
       expect(answerProblems(answer, context)).toEqual([]);
     }
