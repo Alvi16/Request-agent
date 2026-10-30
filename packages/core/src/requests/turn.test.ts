@@ -1,7 +1,9 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { alice, bruno, chloeSlackId, storeMessage } from "../../test/fixtures.ts";
 import { useAppTestDatabase, useTestDatabase } from "../../test/database.ts";
+import { messages } from "../db/schema.ts";
 import { seedDatabase } from "../db/seed.ts";
 import { describeContact, describeProject } from "./queries.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
@@ -20,6 +22,14 @@ async function turnFor(
 ) {
   const messageId = await storeMessage(getDatabase(), message);
   return prepareTurn(getAppDatabase(), { messageId, trust, channelAddress });
+}
+
+async function authorOf(messageId: string) {
+  const [row] = await getDatabase()
+    .select({ author: messages.authorContactId })
+    .from(messages)
+    .where(eq(messages.id, messageId));
+  return row?.author;
 }
 
 describe("prepareTurn: who the agent acts for", () => {
@@ -51,6 +61,16 @@ describe("prepareTurn: who the agent acts for", () => {
     const turn = await turnFor({ sender: "someone@unknown.example", bodyText: "Bonjour" });
 
     expect(turn.actor).toEqual({ kind: "anonymous" });
+  });
+
+  it("records a verified contact as the author of the message, and nobody else", async () => {
+    const verified = await turnFor({ sender: bruno, bodyText: "Bonjour" });
+    const forged = await turnFor({ sender: alice, bodyText: "Bonjour" }, "UNVERIFIED");
+
+    expect(await authorOf(verified.messageId)).toBe(
+      verified.actor.kind === "contact" ? verified.actor.contactId : "missing",
+    );
+    expect(await authorOf(forged.messageId)).toBeNull();
   });
 
   it("matches the email address whatever its case", async () => {
