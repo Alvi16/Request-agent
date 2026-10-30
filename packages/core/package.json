@@ -17,6 +17,7 @@
     "db:seed": "node --env-file-if-exists=../../.env scripts/seed.ts",
     "staff:add": "node --env-file-if-exists=../../.env scripts/add-staff.ts",
     "contact:add": "node --env-file-if-exists=../../.env scripts/add-contact.ts",
+    "kb:import": "node --env-file-if-exists=../../.env scripts/import-knowledge.ts",
     "eval:classification": "node --env-file-if-exists=../../.env scripts/eval-classification.ts",
     "eval:duplicates": "node --env-file-if-exists=../../.env scripts/eval-duplicates.ts"
   },
