@@ -1,12 +1,13 @@
 import { MastraLanguageModelV2Mock } from "@mastra/core/test-utils/llm-mock";
 
 type ToolCall = { tool: string; input: unknown };
-export type ScriptedStep = { toolCalls: ToolCall[] } | { text: string };
+// A step calls tools, possibly writing some text next to them as models do, or only writes text.
+export type ScriptedStep = { toolCalls: ToolCall[]; text?: string } | { text: string };
 
 const usage = { inputTokens: 1, outputTokens: 1, totalTokens: 2 };
 
 function toResult(step: ScriptedStep, index: number) {
-  if ("text" in step) {
+  if (!("toolCalls" in step)) {
     return {
       content: [{ type: "text" as const, text: step.text }],
       finishReason: "stop" as const,
@@ -14,13 +15,17 @@ function toResult(step: ScriptedStep, index: number) {
       warnings: [],
     };
   }
+  const text = step.text === undefined ? [] : [{ type: "text" as const, text: step.text }];
   return {
-    content: step.toolCalls.map((call, position) => ({
-      type: "tool-call" as const,
-      toolCallId: `call-${index}-${position}`,
-      toolName: call.tool,
-      input: JSON.stringify(call.input),
-    })),
+    content: [
+      ...text,
+      ...step.toolCalls.map((call, position) => ({
+        type: "tool-call" as const,
+        toolCallId: `call-${index}-${position}`,
+        toolName: call.tool,
+        input: JSON.stringify(call.input),
+      })),
+    ],
     finishReason: "tool-calls" as const,
     usage,
     warnings: [],

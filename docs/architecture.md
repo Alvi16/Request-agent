@@ -75,7 +75,7 @@ sequenceDiagram
     H->>M: judge the duplicate candidates
     H->>M: run the agent with the tools bound to this sender
     M->>K: tool calls: create, add a message, clarify, find, status...
-    H->>A: reply written by the code from the tool outcomes
+    H->>A: answer of the agent, checked by the code
     A->>K: mark the message as handled
     A->>C: answer in the thread
     A->>K: store the answer, tied to the message it answers
@@ -86,8 +86,8 @@ sequenceDiagram
 3. **Fixed rules.** The sender is matched to a contact, and the project is found, in this order, from a channel dedicated to a project, a project key in the message, or the only project of the sender. Several possible projects make it ambiguous, and the agent may not pick one.
 4. **Classification.** A separate call to the model gives the type, priority, title and summary, with a confidence read from its token probabilities. Thanks and advertisements stop here.
 5. **Duplicates.** Open requests of the same project that share words or spelling with the message are given to the model, which names the one about the same problem, or none.
-6. **Agent.** The agent receives the message wrapped as untrusted text, the facts computed above, and tools built for this sender only. It stops as soon as one action has succeeded, and after 5 calls at most.
-7. **Answer.** The code writes the answer from what the tools did: the reference, the question to ask, or the status. The text of the model is never sent.
+6. **Agent.** The agent receives the message wrapped as untrusted text, the information computed above, and tools built for this sender only. It acts on the message, looks up what the answer needs, and writes the answer, in 8 calls at most.
+7. **Answer.** The code checks the answer of the agent before it is sent, and writes it from what the tools did when no answer passes the check ([decision 009](decisions/009-agent-answers.md)).
 8. **Safety net.** A message the agent left unhandled is filed for a person. A failure is retried after 1 and 5 minutes, then filed for a person. At startup, each adapter handles again the messages stored but not handled.
 
 The steps 3 to 7 are detailed in [`agent.md`](agent.md), the protections in [decision 003](decisions/003-agent-tools-security.md), and the duplicates and retries in [decision 007](decisions/007-duplicates-and-reliability.md).

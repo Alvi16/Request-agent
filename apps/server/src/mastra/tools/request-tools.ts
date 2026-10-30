@@ -10,7 +10,11 @@ import {
   describeProject,
   findRequest,
   findRequestInput,
+  forwardToTeam,
+  forwardToTeamInput,
   getRequestStatus,
+  listContactRequests,
+  listContactRequestsInput,
   listProjectRequests,
   listProjectRequestsInput,
   requestClarification,
@@ -22,6 +26,8 @@ import {
   updateRequestInput,
 } from "@request-agent/core";
 import { z } from "zod";
+
+import { explainForModel } from "./explain";
 
 const noInput = z.object({});
 
@@ -41,7 +47,13 @@ export type ToolOutcome =
   | { tool: "list_project_requests"; result: ResultOf<typeof listProjectRequests> }
   | { tool: "get_request_status"; result: ResultOf<typeof getRequestStatus> }
   | { tool: "add_message_to_request"; result: ResultOf<typeof addMessageToRequest> }
-  | { tool: "search_requests"; result: ResultOf<typeof searchRequests> };
+  | { tool: "search_requests"; result: ResultOf<typeof searchRequests> }
+  | { tool: "list_my_requests"; result: ResultOf<typeof listContactRequests> }
+  | {
+      tool: "forward_to_team";
+      question: string;
+      result: ResultOf<typeof forwardToTeam>;
+    };
 
 // Builds the tools for one message. The turn is captured here, out of reach of the model and of
 // HTTP clients: the tools are never registered on the server, so its API cannot call them.
@@ -79,7 +91,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await createRequest(db, turn, input);
       outcomes.push({ tool: "create_request", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -93,7 +105,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await requestClarification(db, turn, input);
       outcomes.push({ tool: "request_clarification", question: input.question, result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -106,7 +118,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await updateRequest(db, turn, input);
       outcomes.push({ tool: "update_request", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -119,7 +131,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await findRequest(db, turn, input);
       outcomes.push({ tool: "find_request", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -130,7 +142,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await listProjectRequests(db, turn, input);
       outcomes.push({ tool: "list_project_requests", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -141,7 +153,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await getRequestStatus(db, turn, input);
       outcomes.push({ tool: "get_request_status", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -154,7 +166,7 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await addMessageToRequest(db, turn, input);
       outcomes.push({ tool: "add_message_to_request", result });
-      return result;
+      return explainForModel(result);
     },
   });
 
@@ -167,7 +179,35 @@ export function createRequestTools(
     execute: async (input) => {
       const result = await searchRequests(db, turn, input);
       outcomes.push({ tool: "search_requests", result });
-      return result;
+      return explainForModel(result);
+    },
+  });
+
+  const listMyRequestsTool = createTool({
+    id: "list_my_requests",
+    description:
+      "Lists the requests the sender made or wrote in, most recent activity first. Use it when " +
+      "the sender asks about their own requests.",
+    inputSchema: listContactRequestsInput,
+    execute: async (input) => {
+      const result = await listContactRequests(db, turn, input);
+      outcomes.push({ tool: "list_my_requests", result });
+      return explainForModel(result);
+    },
+  });
+
+  const forwardToTeamTool = createTool({
+    id: "forward_to_team",
+    description:
+      "Passes to the team a question or a wish of the sender that the tools cannot answer or " +
+      "do: a date, who handles a request, how to use the product, closing or escalating a " +
+      "request. Give the reference of the request the question is about, if any. That request " +
+      "then waits for a person, who reads the question.",
+    inputSchema: forwardToTeamInput,
+    execute: async (input) => {
+      const result = await forwardToTeam(db, turn, input);
+      outcomes.push({ tool: "forward_to_team", question: input.question, result });
+      return explainForModel(result);
     },
   });
 
@@ -190,5 +230,7 @@ export function createRequestTools(
     get_request_status: getRequestStatusTool,
     add_message_to_request: addMessageToRequestTool,
     search_requests: searchRequestsTool,
+    list_my_requests: listMyRequestsTool,
+    forward_to_team: forwardToTeamTool,
   };
 }

@@ -10,7 +10,15 @@ import {
   updateRequest,
 } from "./commands.ts";
 import type { Classification } from "../classification/classifier.ts";
-import { findRequest, getRequestStatus, listProjectRequests, searchRequests } from "./queries.ts";
+import {
+  findRequest,
+  getRequestStatus,
+  isMessageFiled,
+  listContactRequests,
+  listProjectRequests,
+  searchRequests,
+} from "./queries.ts";
+import { reviewRequest } from "./review.ts";
 import { prepareTurn, type Trust } from "./turn.ts";
 
 const getDatabase = useTestDatabase();
@@ -77,14 +85,16 @@ describe("findRequest", () => {
   it("returns a request with its history, without the text of its messages", async () => {
     const reference = await file(alice, { type: "BUG", title: "Panier vidé", projectKey: "SHOP" });
     await addMessageToRequest(getAppDatabase(), await turnFor(alice), { reference });
+    await reviewRequest(getAppDatabase(), { contactId: null }, { reference, changes: {} });
 
     const result = await findRequest(getAppDatabase(), await turnFor(alice), { reference });
 
     expect(result).toMatchObject({ ok: true, value: { request: { reference }, messageCount: 2 } });
-    expect(result.ok && result.value.recentEvents.map((event) => event.type)).toEqual([
-      "MESSAGE_ADDED",
-      "CLASSIFIED",
-      "CREATED",
+    expect(result.ok && result.value.recentEvents.map((event) => [event.type, event.by])).toEqual([
+      ["REVIEWED", "HUMAN"],
+      ["MESSAGE_ADDED", "AGENT"],
+      ["CLASSIFIED", "AGENT"],
+      ["CREATED", "AGENT"],
     ]);
     expect(JSON.stringify(result)).not.toContain("Message");
   });
@@ -195,6 +205,47 @@ describe("listProjectRequests", () => {
         limit: 10,
       }),
     ).toEqual({ ok: false, error: "PROJECT_NOT_FOUND" });
+  });
+});
+
+describe("isMessageFiled", () => {
+  it("tells whether a message is filed under a request", async () => {
+    const filed = await turnFor(bruno);
+    await createRequest(getAppDatabase(), classified(filed), {});
+    const unfiled = await turnFor(bruno);
+
+    expect(await isMessageFiled(getAppDatabase(), filed.messageId)).toBe(true);
+    expect(await isMessageFiled(getAppDatabase(), unfiled.messageId)).toBe(false);
+  });
+});
+
+describe("listContactRequests", () => {
+  it("lists the requests the sender made or wrote in, most recent activity first", async () => {
+    const portal = await file(bruno, { type: "BUG", title: "Portail lent", projectKey: "PORTAL" });
+    await file(alice, { type: "BUG", title: "Panier vidé", projectKey: "SHOP" });
+    await addMessageToRequest(getAppDatabase(), await chloe(), { reference: portal });
+    const later = await file(bruno, { type: "BUG", title: "Export vide", projectKey: "PORTAL" });
+
+    const ofBruno = await listContactRequests(getAppDatabase(), await turnFor(bruno), {
+      limit: 10,
+    });
+    const ofChloe = await listContactRequests(getAppDatabase(), await chloe(), { limit: 10 });
+
+    expect(ofBruno.ok && ofBruno.value.map((request) => request.reference)).toEqual([
+      later,
+      portal,
+    ]);
+    expect(ofChloe.ok && ofChloe.value.map((request) => request.reference)).toEqual([portal]);
+  });
+
+  it("gives an unverified sender nothing", async () => {
+    await file(bruno, { type: "BUG", title: "Portail lent", projectKey: "PORTAL" });
+
+    expect(
+      await listContactRequests(getAppDatabase(), await turnFor(bruno, { trust: "UNVERIFIED" }), {
+        limit: 10,
+      }),
+    ).toEqual({ ok: false, error: "UNVERIFIED_SENDER" });
   });
 });
 

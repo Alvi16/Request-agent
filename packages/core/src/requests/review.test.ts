@@ -6,7 +6,12 @@ import { alice, bruno, classified, storeMessage } from "../../test/fixtures.ts";
 import { contacts, events, requests } from "../db/schema.ts";
 import { seedDatabase } from "../db/seed.ts";
 import { unclassifiedTurn } from "./classified-turn.ts";
-import { createRequest, fileUnhandledMessage } from "./commands.ts";
+import {
+  addMessageToRequest,
+  createRequest,
+  fileUnhandledMessage,
+  forwardToTeam,
+} from "./commands.ts";
 import { listReviewQueue, markDuplicate, type Reviewer, reviewRequest } from "./review.ts";
 import { prepareTurn } from "./turn.ts";
 
@@ -55,6 +60,24 @@ describe("listReviewQueue", () => {
 
     expect(queue.map((item) => item.request.reference)).toEqual([first, second]);
     expect(queue[0]?.reasons).toEqual(["PROJECT_AMBIGUOUS", "UNHANDLED"]);
+  });
+
+  it("adds a question passed to the team since the last review to the reasons", async () => {
+    const created = await createRequest(
+      getAppDatabase(),
+      classified(await turnFor(bruno, "Le portail plante.")),
+      {},
+    );
+    const reference = created.ok ? created.value.request.reference : "";
+    const followUp = classified(await turnFor(bruno, "C'est pour quand ?"));
+    await addMessageToRequest(getAppDatabase(), followUp, { reference });
+    await forwardToTeam(getAppDatabase(), followUp, { question: "Quand est-ce prévu ?" });
+
+    const [waiting] = await listReviewQueue(getAppDatabase());
+    await reviewRequest(getAppDatabase(), reviewer, { reference, changes: {} });
+
+    expect(waiting).toMatchObject({ request: { reference }, reasons: ["QUESTION_FOR_TEAM"] });
+    expect(await listReviewQueue(getAppDatabase())).toEqual([]);
   });
 });
 

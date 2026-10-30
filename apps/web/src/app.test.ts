@@ -1,6 +1,8 @@
 import {
+  addMessageToRequest,
   createRequest,
   fileUnhandledMessage,
+  forwardToTeam,
   getRequestRecord,
   prepareTurn,
   saveStaffAccount,
@@ -204,6 +206,31 @@ describe("pages", () => {
 
     expect(queue).toContain(waiting);
     expect(queue).toContain("Message non traité par l&#39;agent");
+  });
+
+  it("shows a question the agent passed to the team, in the queue and in the history", async () => {
+    const cookie = await signIn();
+    const reference = await portalRequest("Le portail plante.");
+    const messageId = await storeMessage(getDatabase(), {
+      sender: bruno,
+      bodyText: "C'est pour quand ?",
+    });
+    const followUp = classified(
+      await prepareTurn(getAppDatabase(), { messageId, trust: "VERIFIED", channelAddress: null }),
+    );
+    await addMessageToRequest(getAppDatabase(), followUp, { reference });
+    await forwardToTeam(getAppDatabase(), followUp, { question: "Quand est-ce prévu ?" });
+
+    const queue = await (await app.request("/review", { headers: { cookie } })).text();
+    const page = await (
+      await app.request(`/requests/${reference}`, { headers: { cookie } })
+    ).text();
+
+    expect(queue).toContain("Question transmise à l&#39;équipe");
+    expect(page).toContain("Revue demandée");
+    expect(page).toContain(
+      "raison : Question transmise à l&#39;équipe, question : Quand est-ce prévu ?",
+    );
   });
 
   it("shows a request with its messages, escaping what senders wrote", async () => {

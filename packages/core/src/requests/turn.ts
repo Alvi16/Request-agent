@@ -143,6 +143,13 @@ export async function prepareTurn(db: Database, input: TurnInput): Promise<Turn>
     throw new Error(`Message ${input.messageId} must be stored before the agent handles it`);
   }
   const actor = await resolveActor(db, message.channel, message.sender, input.trust);
+  // Only a verified contact is recorded as the author, so a forged sender address claims nothing.
+  if (actor.kind === "contact") {
+    await db
+      .update(messages)
+      .set({ authorContactId: actor.contactId })
+      .where(eq(messages.id, input.messageId));
+  }
   const text = `${message.subject ?? ""}\n${message.bodyText}`;
   const project = await identifyProject(db, actor, message.channel, input.channelAddress, text);
   return { actor, messageId: input.messageId, project };

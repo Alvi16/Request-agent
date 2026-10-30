@@ -8,11 +8,11 @@ This page describes what happens to a message received by the agent, how it is c
 2. **The code identifies the sender and the project**, with fixed rules: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the project is ambiguous.
 3. **The classifier reads the message** and the last 4 messages of its conversation. In one call to the model, without tools, it gives the type, the priority, a title and a one-sentence summary. Its confidence is read from the probabilities of the tokens of the type, not written by the model. If this step fails, nothing is written.
 4. **The code looks for an open request about the same problem.** It takes candidates from the open requests of the project that the sender can reach, by words and by spelling, and the model says which one repeats the message, if any. See [Duplicates](#duplicates).
-5. **The agent decides what to do.** It receives the facts computed by the code (sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request, give a status or ask a question. It stops as soon as the message is filed, added to a request or answered by a question.
-6. **The code makes sure no message is lost.** If the agent ends without filing or answering the message, and the message is not clearly `OTHER`, the code files it for a review, with the reason `UNHANDLED`. If handling fails, for example while Ollama is down, the message is handled again after 1 minute, then after 5 minutes. After the third failure, it is filed for a person without classification. See [Reliability](#reliability).
-7. **The code writes the answer to the sender** from what the tools did: the reference of the request, the message added to a request, the status, the clarification question or the requests found. The text written by the model is never sent: a small local model mixes its reasoning with its answer, and can promise actions that nobody performed. No answer is sent for a message that is clearly `OTHER`, such as thanks, which also avoids loops of automatic replies by email.
+5. **The agent acts, then answers.** It receives the information computed by the code (today's date, sender, project, classification, request already linked to the conversation) and calls the tools: file the message, add it to an existing request or ask which project. Then it looks up what the answer needs, passes to the team what it cannot answer, and writes the answer. A clarification question ends the run: it is the answer.
+6. **The code makes sure no message is lost.** A follow-up that the agent did not add to its request is added to the request of its conversation. A question that got no answer which can be sent is passed to the team. A message still filed under no request, and not clearly `OTHER`, is filed for a review, with the reason `UNHANDLED`, unless it only asked a question that got its answer. If handling fails, for example while Ollama is down, the message is handled again after 1 minute, then after 5 minutes. After the third failure, it is filed for a person without classification. See [Reliability](#reliability).
+7. **The code checks the answer before it is sent.** It refuses a request that no tool returned, codes and tool names, promises that nobody keeps, a claim that the question was passed to the team when it was not, "tu", and titles such as Madame or Monsieur. A refused answer is written again once, with the reason. When no answer passes, the code writes it from what the tools did: the reference, the message added to a request, the status or the requests found. See [decision 009](decisions/009-agent-answers.md). No answer is sent for a message that is clearly `OTHER` and asks nothing, such as thanks, which also avoids loops of automatic replies by email.
 
-The agent makes at most 5 calls to the model per message. Thinking mode is turned off, because it more than triples the answer time on a CPU. Answers are written in French.
+The agent makes at most 8 calls to the model per message. Thinking mode is turned off, because it more than triples the answer time on a CPU. Answers are written in the language of the message, addressing the sender with "vous" in French. An answer takes 2 to 7 minutes on the development machine.
 
 ## Request types
 
@@ -52,10 +52,11 @@ A new request waits for a person (`needs_review`) when at least one of these is 
 | `UNVERIFIED_SENDER`  | The channel could not verify who sent the message                                   |
 | `POSSIBLE_DUPLICATE` | The message may repeat an open request, without enough confidence to add it there   |
 | `UNHANDLED`          | The agent did not file the message, or it could not be handled after three attempts |
+| `QUESTION_FOR_TEAM`  | The agent passed a question or a wish of the sender to the team                     |
 
 The threshold is set with `CLASSIFICATION_REVIEW_THRESHOLD`, between 0 and 1. The code decides the review, never the model.
 
-A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request, and the agent is not run, which saves its calls. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
+A message classified `OTHER` with a confidence above the threshold, such as thanks or an advertisement, is not filed as a request. When it asks nothing, the agent is not run, which saves its calls; when it asks a question, the agent answers it. The message stays stored with its conversation. Below the threshold, it is filed for a person to check.
 
 The team works through the review queue in the web interface (`pnpm web`, see [decision 008](decisions/008-web-interface.md)), with three operations of the business core: list the requests waiting for review, with their reasons; review a request, optionally correcting its type, priority, project or status; and mark a request as a duplicate of another one, which closes it and points it to the original. Each of them is recorded in the history as an action of a person (`REVIEWED`, `MARKED_DUPLICATE`, `STATUS_CHANGED`).
 
@@ -85,14 +86,15 @@ Each inbound message records when it was handled (`handled_at`) and how many att
 
 ## What the agent does
 
-| Classification                   | Action                                                                                                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FOLLOW_UP` or `STATUS_REQUEST`  | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request |
-| Another type, project identified | Files the message as a new request                                                                                                                                                      |
-| Another type, project not clear  | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                      |
-| Repeats an open request          | `create_request` adds the message to it, when the model is confident enough                                                                                                             |
-| `OTHER`, confident               | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                   |
-| Unverified sender                | Only files the message, which waits for a review                                                                                                                                        |
+| Classification                    | Action                                                                                                                                                                                  |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FOLLOW_UP` or `STATUS_REQUEST`   | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request |
+| Another type, project identified  | Files the message as a new request                                                                                                                                                      |
+| Another type, project not clear   | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                      |
+| Repeats an open request           | `create_request` adds the message to it, when the model is confident enough                                                                                                             |
+| `OTHER`, confident, no question   | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                   |
+| A question the data cannot answer | `forward_to_team` records it on the request it is about, which goes to the review queue                                                                                                 |
+| Unverified sender                 | Only files the message, which waits for a review                                                                                                                                        |
 
 When `create_request` files a message, the type, priority, title and summary come from the classification, and the description is the message itself. The agent cannot change them: it only chooses the project when none was identified.
 

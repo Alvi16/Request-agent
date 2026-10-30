@@ -96,7 +96,7 @@ A message received or sent, on any channel.
 | `external_id`       | Slack message (channel ID and timestamp) or email Message-ID                                                        |
 | `direction`         | `INBOUND` (received) or `OUTBOUND` (sent by the agent)                                                              |
 | `request_id`        | Request the message belongs to, once identified                                                                     |
-| `author_contact_id` | Author, once identified                                                                                             |
+| `author_contact_id` | Contact who wrote the message, set only when the channel verified a known sender                                    |
 | `sender`            | Sender as given by the channel: email address or Slack user ID                                                      |
 | `subject`           | Email subject                                                                                                       |
 | `body_text`         | Text of the message                                                                                                 |
@@ -146,7 +146,7 @@ The history of each request.
 | `actor_contact_id` | The person, when a human acted                                                                                                                         |
 | `channel`          | Channel the action came from                                                                                                                           |
 | `message_id`       | Message that caused the event                                                                                                                          |
-| `data`             | Details: changed values, classification, confidence, reason                                                                                            |
+| `data`             | Details: changed values, classification, confidence, reason, or the question the agent passed to the team (`REVIEW_REQUESTED`)                         |
 
 Events can only be added. A database trigger rejects any update or deletion, so the history cannot be rewritten.
 

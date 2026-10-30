@@ -36,20 +36,21 @@ The channel adapter decides whether the sender is verified, never the model:
 - **Slack:** the request signature (HMAC-SHA256 with the signing secret, at most five minutes old, compared in constant time), or the app token in Socket Mode.
 - **Email:** `dmarc=pass` in the `Authentication-Results` header added by the receiving mail provider, recognized by its own `authserv-id`. RFC 8601 warns that the same header can be forged when it comes from elsewhere. DMARC is required because it checks that the `From` domain matches the authenticated domain.
 
-A verified sender who is a known contact gets the nine tools, limited by the access rule. Anyone else only gets `identify_contact`, `identify_project` and `create_request`: the message is filed and waits for a human review, and nothing existing is read or changed. The details of each check are implemented with each channel.
+A verified sender who is a known contact gets the twelve tools, limited by the access rule. Anyone else only gets `identify_contact`, `identify_project` and `create_request`: the message is filed and waits for a human review, and nothing existing is read or changed. The details of each check are implemented with each channel.
 
 ## Limits on the model
 
-| Measure                                                                                   | Risk addressed (OWASP LLM Top 10, 2025)       |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------- |
-| At most 5 model calls per message (`maxSteps`)                                            | LLM10 Unbounded Consumption                   |
-| Tool inputs validated with sizes and allowed values                                       | LLM10, LLM05 Improper Output Handling         |
-| A message is filed only once, even when two attempts run at the same time                 | LLM06 Excessive Agency                        |
-| Tools return references, titles, statuses and summaries, never the text of other messages | LLM02 Sensitive Information Disclosure, LLM01 |
-| The text of the message is wrapped in `<message>` tags that it cannot close               | LLM01 Prompt Injection                        |
-| Errors are business codes, without database details                                       | LLM02                                         |
-| Every change is written to the request history                                            | LLM06                                         |
-| The model never chooses who receives the answer                                           | LLM06                                         |
+| Measure                                                                                             | Risk addressed (OWASP LLM Top 10, 2025)       |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| At most 8 model calls per message (`maxSteps`)                                                      | LLM10 Unbounded Consumption                   |
+| Tool inputs validated with sizes and allowed values                                                 | LLM10, LLM05 Improper Output Handling         |
+| A message is filed only once, even when two attempts run at the same time                           | LLM06 Excessive Agency                        |
+| Tools return references, titles, statuses and summaries, never the text of other messages           | LLM02 Sensitive Information Disclosure, LLM01 |
+| The text of the message is wrapped in `<message>` tags that it cannot close                         | LLM01 Prompt Injection                        |
+| Errors are business codes, without database details                                                 | LLM02                                         |
+| Every change is written to the request history                                                      | LLM06                                         |
+| The model never chooses who receives the answer                                                     | LLM06                                         |
+| The answer of the model is checked by code before it is sent ([decision 009](009-agent-answers.md)) | LLM05, LLM09 Misinformation                   |
 
 ## Database rights
 

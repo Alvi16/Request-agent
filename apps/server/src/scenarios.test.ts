@@ -183,7 +183,9 @@ describe("Email → Agent → Request", () => {
       handlerFor(
         [
           { toolCalls: [{ tool: "create_request", input: {} }] },
+          { text: "Votre demande est enregistrée sous la référence REQ-0001." },
           { toolCalls: [{ tool: "add_message_to_request", input: { reference: "REQ-0001" } }] },
+          { text: "La demande REQ-0001 est nouvelle : personne ne l'a encore prise en charge." },
         ],
         [{ title: "Export PDF vide" }, { type: "FOLLOW_UP", title: "Relance export PDF" }],
       ),
