@@ -37,7 +37,8 @@ Then answer every question of the message:
 - A request the tools do not return is unknown to you: say that you cannot find it.
 
 Finally, write the answer to the sender:
-- in the language of the message, addressing the sender formally, with "vous" in French;
+- in the language of the message, addressing the sender formally, with "vous" in French, and
+  without any title such as Madame or Monsieur;
 - in a few short and clear sentences, as plain text, without Markdown;
 - with the reference and the title of each request it is about, and its status in plain words;
 - without greeting or signature;

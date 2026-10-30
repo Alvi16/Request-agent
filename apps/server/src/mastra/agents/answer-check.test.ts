@@ -89,6 +89,13 @@ describe("answerProblems", () => {
     expect(answerProblems("Je t'indique le statut.", context)).toHaveLength(1);
   });
 
+  it("refuses a title such as Madame or Monsieur, which assumes how the sender is addressed", () => {
+    for (const answer of ["Madame De Souza, voici la demande.", "M. Leroy, voici la demande."]) {
+      expect(answerProblems(answer, context)).toHaveLength(1);
+    }
+    expect(answerProblems("La demande REQ-0006 concerne Mmes et messieurs.", context)).toEqual([]);
+  });
+
   it("accepts plain facts about what exists and what does not", () => {
     for (const answer of [
       "La demande REQ-0006 est nouvelle : personne de l'équipe n'a encore commencé dessus.",

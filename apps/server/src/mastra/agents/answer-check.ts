@@ -71,6 +71,9 @@ const forwardClaims = [
 // "requête" does not hold the word "te".
 const informalAddress = /(?<!\p{L})(tu|te|ta|ton|tes|toi)(?!\p{L})|(?<!\p{L})t'/iu;
 
+// The system does not know how a sender wants to be addressed, so no title is used.
+const courtesyTitle = /(?<!\p{L})(Madame|Monsieur|Mademoiselle|Mme|Mlle)(?!\p{L})|(?<!\p{L})M\.\s/u;
+
 function unknownReferences(text: string, known: Set<number>): string[] {
   return Array.from(text.matchAll(/REQ-\d{1,9}/gi), (match) => match[0].toUpperCase()).filter(
     (reference) => {
@@ -114,6 +117,9 @@ export function answerProblems(text: string, context: AnswerContext): string[] {
   }
   if (informalAddress.test(answer)) {
     problems.push('It says "tu" to the sender. Address the sender with "vous".');
+  }
+  if (courtesyTitle.test(answer)) {
+    problems.push("It uses a title such as Madame or Monsieur. Use no title for the sender.");
   }
   if (!context.forwarded && forwardClaims.some((pattern) => pattern.test(answer))) {
     problems.push(
