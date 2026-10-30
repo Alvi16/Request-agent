@@ -25,6 +25,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { createSignInLimiter, type SignInLimiter } from "./sign-in-limiter.ts";
 import { dateFormatter } from "./views/labels.ts";
+import { icon } from "./views/icon.ts";
 import type { Fragment, ViewContext } from "./views/layout.ts";
 import { type Notice, notices, requestPage } from "./views/request.ts";
 import { requestListPage, reviewQueuePage } from "./views/requests.ts";
@@ -93,6 +94,7 @@ export function createWebApp(options: WebAppOptions) {
   app.get("/app.css", (c) =>
     c.body(stylesheet, 200, { "Content-Type": "text/css; charset=utf-8" }),
   );
+  app.get("/favicon.svg", (c) => c.body(icon, 200, { "Content-Type": "image/svg+xml" }));
   app.get("/app.js", (c) =>
     c.body(script, 200, { "Content-Type": "text/javascript; charset=utf-8" }),
   );
