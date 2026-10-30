@@ -16,6 +16,7 @@ import {
   timestamp,
   unique,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 // Every table uses UUIDv7 identifiers: unique and ordered by creation time, which keeps indexes compact.
@@ -345,3 +346,31 @@ export const mailboxCursors = pgTable("mailbox_cursors", {
   lastUid: bigint("last_uid", { mode: "number" }).notNull(),
   updatedAt: updatedAt(),
 });
+
+// Size of the vectors of the embedding model, qwen3-embedding:0.6b (decision 010).
+export const embeddingDimensions = 1024;
+
+// A help article of a project. The agent answers support questions from the articles of the
+// projects the sender works on, found by meaning with their embedding (decision 010).
+export const knowledgeArticles = pgTable(
+  "knowledge_articles",
+  {
+    id: id(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id),
+    // Where the article comes from, such as the path of its file: importing it again updates it.
+    source: text("source").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // Vectors of different models cannot be compared: a search only reads those of its model.
+    embeddingModel: text("embedding_model").notNull(),
+    embedding: vector("embedding", { dimensions: embeddingDimensions }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("knowledge_articles_project_id_source_key").on(t.projectId, t.source),
+    index("knowledge_articles_embedding_idx").using("hnsw", t.embedding.op("vector_cosine_ops")),
+  ],
+);

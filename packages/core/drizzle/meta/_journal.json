@@ -50,6 +50,13 @@
       "when": 1793312187108,
       "tag": "0006_mailbox_cursors",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793400721436,
+      "tag": "0007_knowledge_articles",
+      "breakpoints": true
     }
   ]
 }
