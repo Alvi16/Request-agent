@@ -99,7 +99,8 @@ function answerContext(
       .filter((requestNumber) => requestNumber !== undefined),
   );
   const forwarded = outcomes.some((o) => o.tool === "forward_to_team" && o.result.ok);
-  return { knownReferences, forwarded };
+  const inProgress = seen.some((text) => /IN_PROGRESS|in progress: the team/.test(text));
+  return { knownReferences, forwarded, inProgress };
 }
 
 // Types of a message about a request already made, which belongs with that request.
@@ -148,11 +149,7 @@ async function forwardUnanswered(
     return;
   }
   const question = turn.messageText.slice(0, forwardedQuestionLength);
-  outcomes.push({
-    tool: "forward_to_team",
-    question,
-    result: await forwardToTeam(db, turn, { question }),
-  });
+  outcomes.push({ tool: "forward_to_team", result: await forwardToTeam(db, turn, { question }) });
 }
 
 function finalReply(

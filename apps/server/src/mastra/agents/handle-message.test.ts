@@ -386,7 +386,7 @@ describe("handleMessage", () => {
 
     expect(result).toEqual({
       reply:
-        "Votre question est transmise à l'équipe, sous la référence REQ-0001 : « Travaillez-vous le samedi ? »",
+        "Votre question est transmise à l'équipe. Elle concerne la demande REQ-0001 (Portail inaccessible), enregistrée, en attente de traitement.",
       filedBySystem: false,
     });
     const history = await getDatabase().select().from(events);
@@ -405,7 +405,7 @@ describe("handleMessage", () => {
     });
 
     expect(result.reply).toBe(
-      "Votre question est transmise à l'équipe, sous la référence REQ-0001 : « C'est prévu pour quand ? »",
+      "Votre question est transmise à l'équipe. Elle concerne la demande REQ-0001 (Portail inaccessible), enregistrée, en attente de traitement.",
     );
     expect(await getDatabase().select().from(requests)).toHaveLength(1);
   });

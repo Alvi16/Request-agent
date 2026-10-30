@@ -369,4 +369,5 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 - The Mastra server API has no authentication. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere. The web interface of the team has its own accounts.
 - The web interface refuses sign-in for 15 minutes after 5 failures for an email. This count is kept in memory: a restart clears it.
 - Mastra keeps its own data (agent memory, traces) in memory and loses it on restart.
+- The local model takes about 6 GB of memory: on a machine with 16 GB, other heavy programs such as web browsers can make Linux stop it for lack of memory.
 - The local model is slow on a CPU: classifying a message takes from 20 s to 60 s, and the agent adds its own calls. Its classification is measured on 80 fictitious messages only, described in [`docs/agent.md`](docs/agent.md).

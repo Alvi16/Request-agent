@@ -49,11 +49,7 @@ export type ToolOutcome =
   | { tool: "add_message_to_request"; result: ResultOf<typeof addMessageToRequest> }
   | { tool: "search_requests"; result: ResultOf<typeof searchRequests> }
   | { tool: "list_my_requests"; result: ResultOf<typeof listContactRequests> }
-  | {
-      tool: "forward_to_team";
-      question: string;
-      result: ResultOf<typeof forwardToTeam>;
-    };
+  | { tool: "forward_to_team"; result: ResultOf<typeof forwardToTeam> };
 
 // Builds the tools for one message. The turn is captured here, out of reach of the model and of
 // HTTP clients: the tools are never registered on the server, so its API cannot call them.
@@ -206,7 +202,7 @@ export function createRequestTools(
     inputSchema: forwardToTeamInput,
     execute: async (input) => {
       const result = await forwardToTeam(db, turn, input);
-      outcomes.push({ tool: "forward_to_team", question: input.question, result });
+      outcomes.push({ tool: "forward_to_team", result });
       return explainForModel(result);
     },
   });

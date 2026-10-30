@@ -374,6 +374,7 @@ describe("forwardToTeam", () => {
     });
 
     expect(result).toMatchObject({ ok: true, value: { reference, needsReview: true } });
+    await forwardToTeam(getAppDatabase(), followUp, { question: "Et la date ?" });
     const forwarded = await getDatabase()
       .select()
       .from(events)

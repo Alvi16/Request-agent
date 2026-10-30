@@ -70,13 +70,12 @@ describe("composeReply", () => {
     const outcomes: ToolOutcome[] = [
       {
         tool: "forward_to_team",
-        question: "Quand est-ce prévu ?",
         result: { ok: true, value: request },
       },
     ];
 
     expect(composeReply(outcomes, undefined)).toBe(
-      "Votre question est transmise à l'équipe, sous la référence REQ-0007 : « Quand est-ce prévu ? »",
+      "Votre question est transmise à l'équipe. Elle concerne la demande REQ-0007 (Export cassé), en cours de traitement.",
     );
   });
 
