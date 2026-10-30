@@ -6,6 +6,7 @@ import {
 } from "@request-agent/core";
 import { html } from "hono/html";
 
+import { channelBadge, priorityBadge, statusBadge, typeBadge } from "./badges.ts";
 import {
   channelLabels,
   eventLabels,
@@ -96,11 +97,11 @@ function details(view: ViewContext, record: RequestRecord): Fragment {
   const requester = record.requesterContact;
   return html`<dl>
     <dt>Type</dt>
-    <dd>${typeLabels[record.type]}</dd>
+    <dd>${typeBadge(record.type)}</dd>
     <dt>Statut</dt>
-    <dd>${statusLabels[record.status]}</dd>
+    <dd>${statusBadge(record.status)}</dd>
     <dt>Priorité</dt>
-    <dd>${record.priority === null ? "—" : priorityLabels[record.priority]}</dd>
+    <dd>${priorityBadge(record.priority)}</dd>
     <dt>Projet</dt>
     <dd>${record.projectKey === null ? "—" : `${record.projectKey} · ${record.projectName}`}</dd>
     <dt>Auteur</dt>
@@ -114,7 +115,7 @@ function details(view: ViewContext, record: RequestRecord): Fragment {
       }
     </dd>
     <dt>Source</dt>
-    <dd>${channelLabels[record.sourceChannel]}</dd>
+    <dd>${channelBadge(record.sourceChannel)}</dd>
     <dt>Confiance de l'agent</dt>
     <dd>${formatConfidence(record.confidence)}</dd>
     <dt>Doublon</dt>
@@ -181,43 +182,48 @@ function reviewForm(record: RequestRecord, projects: { key: string; name: string
   </form>`;
 }
 
+// Each action is a card of its own, in the side column of the page.
 function actions(record: RequestRecord, projects: { key: string; name: string }[]): Fragment {
-  return html`<section class="actions">
-    <h2>${record.needsReview ? "Valider ou corriger" : "Corriger"}</h2>
-    ${
-      record.needsReview
-        ? html`<p class="review">
-            À revoir :
-            ${record.reviewReasons.map(reviewReasonLabel).join(", ") || "raison inconnue"}
-          </p>`
-        : ""
-    }
-    ${reviewForm(record, projects)}
-    <h2>Changer le statut</h2>
-    <form method="post" action="/requests/${record.reference}/status">
-      <label>
-        Statut
-        <select name="status">
-          ${options(requestStatus.enumValues, statusLabels, record.status)}
-        </select>
-      </label>
-      <button type="submit">Changer le statut</button>
-    </form>
-    <h2>Marquer comme doublon</h2>
-    <form method="post" action="/requests/${record.reference}/duplicate">
-      <label>
-        Demande d'origine
-        <input
-          name="duplicateOf"
-          value="${record.duplicateOf ?? ""}"
-          placeholder="REQ-0042"
-          pattern="[Rr][Ee][Qq]-[0-9]{1,9}"
-          required
-        />
-      </label>
-      <button type="submit">Marquer comme doublon et fermer</button>
-    </form>
-  </section>`;
+  return html`<section class="card">
+      <h2>${record.needsReview ? "Valider ou corriger" : "Corriger"}</h2>
+      ${
+        record.needsReview
+          ? html`<p class="review">
+              À revoir :
+              ${record.reviewReasons.map(reviewReasonLabel).join(", ") || "raison inconnue"}
+            </p>`
+          : ""
+      }
+      ${reviewForm(record, projects)}
+    </section>
+    <section class="card">
+      <h2>Changer le statut</h2>
+      <form method="post" action="/requests/${record.reference}/status">
+        <label>
+          Statut
+          <select name="status">
+            ${options(requestStatus.enumValues, statusLabels, record.status)}
+          </select>
+        </label>
+        <button type="submit">Changer le statut</button>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Marquer comme doublon</h2>
+      <form method="post" action="/requests/${record.reference}/duplicate">
+        <label>
+          Demande d'origine
+          <input
+            name="duplicateOf"
+            value="${record.duplicateOf ?? ""}"
+            placeholder="REQ-0042"
+            pattern="[Rr][Ee][Qq]-[0-9]{1,9}"
+            required
+          />
+        </label>
+        <button type="submit">Marquer comme doublon et fermer</button>
+      </form>
+    </section>`;
 }
 
 function messageList(view: ViewContext, record: RequestRecord): Fragment {
@@ -296,11 +302,18 @@ export function requestPage(
           ? ""
           : html`<p class="error" role="alert">${feedback.error}</p>`
       }
-      ${details(view, record)} ${actions(record, projects)}
-      <h2>Messages</h2>
-      ${messageList(view, record)}
-      <h2>Historique</h2>
-      ${history(view, record)}`,
+      <div class="detail">
+        <div class="detail-main">
+          <h2>Messages</h2>
+          ${messageList(view, record)}
+          <h2>Historique</h2>
+          ${history(view, record)}
+        </div>
+        <aside class="detail-side">
+          <section class="card">${details(view, record)}</section>
+          ${actions(record, projects)}
+        </aside>
+      </div>`,
     view.staff,
   );
 }

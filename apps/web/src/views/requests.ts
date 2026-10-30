@@ -10,10 +10,10 @@ import {
 import { html } from "hono/html";
 import type { z } from "zod";
 
+import { channelBadge, priorityBadge, statusBadge, typeBadge } from "./badges.ts";
 import {
   channelLabels,
   formatConfidence,
-  priorityLabels,
   reviewReasonLabel,
   statusLabels,
   typeLabels,
@@ -50,12 +50,12 @@ function requestRows(view: ViewContext, items: ConsoleRequest[]): Fragment {
               <td>
                 ${item.title} ${item.needsReview ? html` <span class="review">À revoir</span>` : ""}
               </td>
-              <td>${typeLabels[item.type]}</td>
+              <td>${typeBadge(item.type)}</td>
               <td>${item.projectKey ?? "—"}</td>
               <td>${item.requester ?? "—"}</td>
-              <td>${statusLabels[item.status]}</td>
-              <td>${item.priority === null ? "—" : priorityLabels[item.priority]}</td>
-              <td>${channelLabels[item.sourceChannel]}</td>
+              <td>${statusBadge(item.status)}</td>
+              <td>${priorityBadge(item.priority)}</td>
+              <td>${channelBadge(item.sourceChannel)}</td>
               <td>${formatConfidence(item.confidence)}</td>
               <td>${view.formatDate(item.updatedAt)}</td>
             </tr>`,
@@ -159,6 +159,7 @@ export function requestListPage(
           : ""
       }`,
     view.staff,
+    "requests",
   );
 }
 
@@ -192,7 +193,7 @@ export function reviewQueuePage(view: ViewContext, queue: ReviewItem[]): Fragmen
                         <td><a href="/requests/${request.reference}">${request.reference}</a></td>
                         <td>${request.title}</td>
                         <td>${reasons.map(reviewReasonLabel).join(", ") || "—"}</td>
-                        <td>${typeLabels[request.type]}</td>
+                        <td>${typeBadge(request.type)}</td>
                         <td>${request.projectKey ?? "—"}</td>
                         <td>${view.formatDate(request.createdAt)}</td>
                       </tr>`,
@@ -202,5 +203,6 @@ export function reviewQueuePage(view: ViewContext, queue: ReviewItem[]): Fragmen
             </div>`
       }`,
     view.staff,
+    "review",
   );
 }

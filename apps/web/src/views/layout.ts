@@ -10,7 +10,18 @@ export interface ViewContext {
   formatDate: (iso: string) => string;
 }
 
-export function page(title: string, body: Fragment, staff?: StaffMember): Fragment {
+// Page of the navigation that is open, marked for the screen readers and the stylesheet.
+export type Section = "requests" | "review";
+
+const current = (section: Section, active: Section | undefined) =>
+  section === active ? html`aria-current="page"` : "";
+
+export function page(
+  title: string,
+  body: Fragment,
+  staff?: StaffMember,
+  active?: Section,
+): Fragment {
   return html`<!doctype html>
     <html lang="fr">
       <head>
@@ -25,8 +36,8 @@ export function page(title: string, body: Fragment, staff?: StaffMember): Fragme
             ? ""
             : html`<header>
                 <nav>
-                  <a href="/">Demandes</a>
-                  <a href="/review">À revoir</a>
+                  <a href="/" ${current("requests", active)}>Demandes</a>
+                  <a href="/review" ${current("review", active)}>À revoir</a>
                 </nav>
                 <span class="muted">${staff.name ?? staff.email}</span>
                 <form method="post" action="/logout">
