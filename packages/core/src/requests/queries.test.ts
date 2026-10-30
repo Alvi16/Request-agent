@@ -87,10 +87,10 @@ describe("findRequest", () => {
     const result = await findRequest(getAppDatabase(), await turnFor(alice), { reference });
 
     expect(result).toMatchObject({ ok: true, value: { request: { reference }, messageCount: 2 } });
-    expect(result.ok && result.value.recentEvents.map((event) => event.type)).toEqual([
-      "MESSAGE_ADDED",
-      "CLASSIFIED",
-      "CREATED",
+    expect(result.ok && result.value.recentEvents.map((event) => [event.type, event.by])).toEqual([
+      ["MESSAGE_ADDED", "AGENT"],
+      ["CLASSIFIED", "AGENT"],
+      ["CREATED", "AGENT"],
     ]);
     expect(JSON.stringify(result)).not.toContain("Message");
   });

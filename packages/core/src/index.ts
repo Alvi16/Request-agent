@@ -57,6 +57,7 @@ export {
   listProjectRequests,
   searchRequests,
   type ContactDescription,
+  type HistoryEntry,
   type ProjectDescription,
   type RequestDetails,
   type RequestStatus,

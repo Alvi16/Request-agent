@@ -44,10 +44,18 @@ export type ProjectDescription =
   | { status: "ambiguous"; candidates: ProjectSummary[] }
   | { status: "unknown" };
 
+// An entry of a request's history: what happened, when, and whether the agent, a person of the
+// team or a fixed rule of the system did it.
+export interface HistoryEntry {
+  type: (typeof events.$inferSelect)["type"];
+  at: string;
+  by: (typeof events.$inferSelect)["actorType"];
+}
+
 export interface RequestDetails {
   request: RequestView;
   messageCount: number;
-  recentEvents: { type: (typeof events.$inferSelect)["type"]; at: string }[];
+  recentEvents: HistoryEntry[];
 }
 
 export interface RequestStatus {
@@ -56,7 +64,7 @@ export interface RequestStatus {
   priority: RequestView["priority"];
   needsReview: boolean;
   updatedAt: string;
-  lastEvent: { type: (typeof events.$inferSelect)["type"]; at: string } | null;
+  lastEvent: HistoryEntry | null;
 }
 
 async function projectSummaries(db: Database, ids: string[]): Promise<ProjectSummary[]> {
@@ -146,14 +154,18 @@ async function findVisibleRequestId(
   return row?.id;
 }
 
-async function recentEvents(db: Database, requestId: string, limit: number) {
+async function recentEvents(
+  db: Database,
+  requestId: string,
+  limit: number,
+): Promise<HistoryEntry[]> {
   const rows = await db
-    .select({ type: events.type, at: events.createdAt })
+    .select({ type: events.type, at: events.createdAt, by: events.actorType })
     .from(events)
     .where(eq(events.requestId, requestId))
     .orderBy(desc(events.createdAt), desc(events.id))
     .limit(limit);
-  return rows.map((row) => ({ type: row.type, at: row.at.toISOString() }));
+  return rows.map((row) => ({ type: row.type, at: row.at.toISOString(), by: row.by }));
 }
 
 export async function findRequest(
