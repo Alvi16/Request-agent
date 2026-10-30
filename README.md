@@ -19,7 +19,9 @@ The P0 and P1 scope of the brief is in place: the Slack and Email channels, the 
 | Email conversations, duplicates, human validation             | P1       | Done        |
 | Web interface to consult and review requests                  | P1       | Done        |
 | Embeddable web widget                                         | P2       | Not planned |
-| Per-project knowledge base and RAG                            | P3       | Not planned |
+| Answers to questions about requests                           | P3       | Done        |
+| Per-project knowledge base and RAG                            | P3       | Done        |
+| Integration with code repositories                            | P3       | Not planned |
 
 ## Architecture at a glance
 
@@ -41,10 +43,10 @@ The business core holds the data model and the request operations, with no depen
 
 Each message is first classified by a separate call to the model, which gives its type, priority, title and summary, with a confidence read from the model's token probabilities. A request waits for a human review when this confidence is low, when its project is unclear or when its sender is unverified. How a message is handled, the types and the measured quality are described in [`docs/agent.md`](docs/agent.md).
 
-The agent works on requests only through twelve typed tools: `identify_contact`, `identify_project`, `create_request`, `request_clarification`, `update_request`, `find_request`, `list_project_requests`, `list_my_requests`, `get_request_status`, `add_message_to_request`, `search_requests` and `forward_to_team`. Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
+The agent works only through thirteen typed tools: `identify_contact`, `identify_project`, `create_request`, `request_clarification`, `update_request`, `find_request`, `list_project_requests`, `list_my_requests`, `get_request_status`, `add_message_to_request`, `search_requests`, `forward_to_team` and `search_knowledge_base`, which finds the help articles of the sender's projects by meaning ([decision 010](docs/decisions/010-knowledge-base.md)). Every message is written by someone outside the system, so the design assumes a message can try to manipulate the model, and limits what it can obtain:
 
 - The tools are built for each message, bound to its sender in the code. They are not registered on the Mastra server, so its HTTP API cannot run them, and neither the model nor a client can change who they act for.
-- A verified sender reaches only the requests of the projects they work on, and the requests they made. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
+- A verified sender reaches only the requests of the projects they work on, the requests they made, and the help articles of their projects. Any other request answers "not found". An unverified sender only gets the tools to file the message, which then waits for a human review.
 - The project is identified by fixed rules before the model runs: a channel dedicated to a project, then a project key written in the message, then the only project of the sender. When several projects remain possible, the result is ambiguous and the model cannot pick one at random.
 - The model makes at most 8 calls per message, tool inputs have bounded sizes, a message is filed only once, and every change is written to the request history.
 - The agent writes the answer, and the code checks it before it is sent: no request that no tool returned, no codes, no promise that nobody keeps, no false claim that a question was passed to the team. When no answer passes, the code writes it from what the tools did. A question the data cannot answer is passed to the team, and a message the agent leaves unhandled is filed for a review, so none is lost.
@@ -61,7 +63,7 @@ The parts of the system, the path of a message and how to add a channel are desc
 | Ollama  | 0.40.11 | Version tested. Older versions can refuse recent models (0.40.3 does)                      |
 | Docker  | 29.1.3  | Version tested, with Docker Compose 2.40.3. Runs the database                              |
 
-The `ornith:9b` model takes 5.6 GB and needs about 6 GB of free RAM. It runs on the CPU when no GPU is available, which makes each answer take 2 to 7 minutes, as measured on the development machine.
+The `ornith:9b` model takes 5.6 GB and needs about 6 GB of free RAM. The embedding model of the knowledge base, `qwen3-embedding:0.6b`, takes 1.2 GB more once loaded. It runs on the CPU when no GPU is available, which makes each answer take 2 to 7 minutes, as measured on the development machine.
 
 ## Installation
 
@@ -76,6 +78,7 @@ npm install -g pnpm@12.15.0
 pnpm install
 
 ollama pull ornith:9b
+ollama pull qwen3-embedding:0.6b
 ```
 
 ## Configuration
@@ -95,6 +98,7 @@ cp .env.example .env
 | `TEST_DATABASE_URL`                                                        | Connection to the test database. Its name must end with `_test`                                                     | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
 | `OLLAMA_BASE_URL`                                                          | Ollama API endpoint. Must end with `/api`                                                                           | `http://127.0.0.1:11434/api`                                                |
 | `OLLAMA_MODEL`                                                             | Model used by the agent. It must be pulled first                                                                    | `ornith:9b`                                                                 |
+| `OLLAMA_EMBEDDING_MODEL`                                                   | Optional. Model of the knowledge base, with vectors of 1024 numbers. It must be pulled first                        | `qwen3-embedding:0.6b` (default)                                            |
 | `CLASSIFICATION_REVIEW_THRESHOLD`                                          | Optional. Below this confidence, from 0 to 1, a request waits for a human review                                    | `0.8` (default)                                                             |
 | `SLACK_BOT_TOKEN`                                                          | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack                   | `xoxb-…`                                                                    |
 | `SLACK_APP_TOKEN`                                                          | Optional. App-level token with the `connections:write` scope, for Socket Mode                                       | `xapp-…`                                                                    |
@@ -172,6 +176,16 @@ The team consults the requests and validates the decisions of the agent in a web
 3. Open `http://127.0.0.1:4112` in Chrome or Firefox and sign in. Safari refuses the session cookie over plain HTTP, even on this machine.
 
 The interface lists the requests with a search and filters, shows the review queue with the reasons of each review, and shows each request with its messages, the answers of the agent and its full history. A request can be validated with corrections, changed to another status or marked as a duplicate: the history records the person who did it. The choices and protections of the interface are described in [decision 008](docs/decisions/008-web-interface.md).
+
+## Knowledge base
+
+The agent answers questions on how to use a product from the help articles of the sender's projects. Load the fictitious articles of the demonstration projects, which needs Ollama:
+
+```bash
+pnpm kb:import --demo
+```
+
+To load your own articles, write one Markdown file per article, in a folder per project key, with the title as the first `# ` heading, such as `help/PORTAL/factures.md`. Then run `pnpm kb:import help`. Running it again updates the articles of the same files. How the articles are searched, and why, is described in [decision 010](docs/decisions/010-knowledge-base.md).
 
 ## Connecting Slack
 
@@ -299,13 +313,13 @@ Request-agent/
 │               │   ├── answer-check.ts    Checks the answer of the agent before it is sent
 │               │   └── reply.ts           Answer written by code when no answer passes
 │               └── tools/
-│                   ├── request-tools.ts   The twelve request tools
+│                   ├── request-tools.ts   The thirteen tools of the agent
 │                   └── explain.ts         Codes of the database in plain words
 ├── packages/
 │   └── core/                       Business core, independent of any channel
 │       ├── drizzle/                SQL migrations, generated from the schema
 │       ├── eval/                   Labeled messages to measure the classifier
-│       ├── scripts/                Migration, demo data, team accounts, contacts and evaluation commands
+│       ├── scripts/                Migration, demo data, team accounts, contacts, knowledge base and evaluation commands
 │       ├── src/
 │       │   ├── env.ts              Environment variables validation
 │       │   ├── untrusted.ts        Wraps text written by senders before a model reads it
@@ -315,6 +329,10 @@ Request-agent/
 │       │   │   └── mailbox-cursor.ts  How far the agent has read its mailbox
 │       │   ├── contacts/
 │       │   │   └── save-contact.ts Registers a person who writes to the agent
+│       │   ├── knowledge/
+│       │   │   ├── embedder.ts     Vectors of articles and questions, from Ollama
+│       │   │   ├── articles.ts     Saves articles and finds those closest to a question
+│       │   │   └── demo-articles.ts  Fictitious help articles of the demonstration projects
 │       │   ├── classification/
 │       │   │   ├── taxonomy.ts     Definitions of the request types and priorities
 │       │   │   ├── classifier.ts   Classification call to Ollama, with its confidence
@@ -365,6 +383,7 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 - Slack messages and emails are handled one at a time. A message left unhandled by a restart is handled again at the next start.
 - Duplicates are found among requests sharing words or spelling with the message: a rewording with no word in common, such as "CB" for "carte bancaire", is missed.
 - Attached files are described (name, type, size) but their content is not stored.
+- A support question answered from a help article gets no request: if the model wrongly judges that an article answers it, the team does not see it. The articles themselves are written and kept up to date by the team.
 - Answers are written by a small local model. The check blocks codes, promises, unknown requests and false claims of forwarding, but a clumsy sentence can still pass. The system records no assignee and no planned date: questions about them are passed to the team.
 - The Mastra server API has no authentication. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere. The web interface of the team has its own accounts.
 - The web interface refuses sign-in for 15 minutes after 5 failures for an email. This count is kept in memory: a restart clears it.
