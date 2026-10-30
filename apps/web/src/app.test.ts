@@ -270,6 +270,8 @@ describe("pages", () => {
     expect(body).toContain("Bruno Leroy");
     expect(body).toContain("Classée");
     expect(body).toContain("confiance : 90 %");
+    expect(body).toContain(`<div class="detail-main">`);
+    expect(body).toContain(`<aside class="detail-side">`);
   });
 
   it("answers not found for an unknown request", async () => {
