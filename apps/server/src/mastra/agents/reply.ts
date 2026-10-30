@@ -86,7 +86,8 @@ function describeOutcome(outcome: ToolOutcome): string | undefined {
       break;
     }
     case "forward_to_team": {
-      answer = `Votre question est transmise à l'équipe, sous la référence ${outcome.result.value.reference} : « ${outcome.question} »`;
+      const request = outcome.result.value;
+      answer = `Votre question est transmise à l'équipe. Elle concerne la demande ${request.reference} (${request.title}), ${statusLabels[request.status]}.`;
       break;
     }
   }
