@@ -86,15 +86,16 @@ Each inbound message records when it was handled (`handled_at`) and how many att
 
 ## What the agent does
 
-| Classification                    | Action                                                                                                                                                                                  |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FOLLOW_UP` or `STATUS_REQUEST`   | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request |
-| Another type, project identified  | Files the message as a new request                                                                                                                                                      |
-| Another type, project not clear   | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                      |
-| Repeats an open request           | `create_request` adds the message to it, when the model is confident enough                                                                                                             |
-| `OTHER`, confident, no question   | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                   |
-| A question the data cannot answer | `forward_to_team` records it on the request it is about, which goes to the review queue                                                                                                 |
-| Unverified sender                 | Only files the message, which waits for a review                                                                                                                                        |
+| Classification                    | Action                                                                                                                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FOLLOW_UP` or `STATUS_REQUEST`   | Finds the request it is about: the one linked to the conversation, a reference written in the message, then a search. Adds the message to it, and gives the status for a status request                                   |
+| Another type, project identified  | Files the message as a new request                                                                                                                                                                                        |
+| Another type, project not clear   | `create_request` refuses to guess (`PROJECT_AMBIGUOUS`), and the agent asks the sender which project, with `request_clarification`                                                                                        |
+| Repeats an open request           | `create_request` adds the message to it, when the model is confident enough                                                                                                                                               |
+| `OTHER`, confident, no question   | Nothing: the agent is not run, nothing is filed and no answer is sent                                                                                                                                                     |
+| `SUPPORT` on how to use a product | `search_knowledge_base` finds the help articles of the sender's projects. When one answers, the agent answers from it and files nothing; otherwise it files the message ([decision 010](decisions/010-knowledge-base.md)) |
+| A question the data cannot answer | `forward_to_team` records it on the request it is about, which goes to the review queue                                                                                                                                   |
+| Unverified sender                 | Only files the message, which waits for a review                                                                                                                                                                          |
 
 When `create_request` files a message, the type, priority, title and summary come from the classification, and the description is the message itself. The agent cannot change them: it only chooses the project when none was identified.
 
