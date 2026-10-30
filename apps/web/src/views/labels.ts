@@ -60,6 +60,7 @@ const reviewReasonLabels: Record<string, string> = {
   UNVERIFIED_SENDER: "Expéditeur non vérifié",
   POSSIBLE_DUPLICATE: "Doublon possible",
   UNHANDLED: "Message non traité par l'agent",
+  QUESTION_FOR_TEAM: "Question transmise à l'équipe",
 };
 
 // Reasons are stored as text in the history, so an unknown one is shown as it is.

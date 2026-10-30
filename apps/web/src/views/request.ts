@@ -68,6 +68,9 @@ function describeValue(value: unknown, key = ""): string {
       .map(([name, item]) => `${detailLabels[name] ?? name} : ${describeValue(item, name)}`)
       .join(", ");
   }
+  if (typeof value === "string" && key === "reason") {
+    return reviewReasonLabel(value);
+  }
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
