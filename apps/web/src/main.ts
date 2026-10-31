@@ -1,8 +1,8 @@
-import { serve } from "@hono/node-server";
 import { connectDatabase } from "@request-agent/core";
 
 import { createWebApp } from "./app.ts";
 import { loadWebEnv } from "./config.ts";
+import { listen } from "./listen.ts";
 
 const env = loadWebEnv();
 const { db, close } = connectDatabase(env.APP_DATABASE_URL);
@@ -14,9 +14,12 @@ const app = createWebApp({
   },
 });
 
-const server = serve({ fetch: app.fetch, hostname: env.WEB_HOST, port: env.WEB_PORT }, (info) => {
-  console.info(`Web interface listening on http://${info.address}:${info.port}`);
+const server = await listen(app.fetch, env.WEB_HOST, env.WEB_PORT).catch(async (error: Error) => {
+  console.error(error.message);
+  await close();
+  process.exit(1);
 });
+console.info(`Web interface listening on http://${env.WEB_HOST}:${env.WEB_PORT}`);
 
 // Stops accepting requests, then closes the database pool.
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
