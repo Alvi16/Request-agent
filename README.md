@@ -109,6 +109,7 @@ cp .env.example .env
 | `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender              | `mx.google.com`                                                             |
 | `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine                   | `true`                                                                      |
 | `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server, even when the agent uses Gmail. The tests empty it                               | `agent-test`, `change-me-mail-test`                                         |
+| `LOCAL_MAIL_IMAP_PORT`, `LOCAL_MAIL_SMTP_PORT`                             | Optional. Ports of the local mail server on the machine (localhost only). They stay the same when the agent uses Gmail           | `3143`, `3025` (default)                                                    |
 | `TEST_EMAIL_HOST`, `TEST_EMAIL_IMAP_PORT`, `TEST_EMAIL_SMTP_PORT`          | Optional. Server of the tests' mailbox, by default the local mail server                                                         | `127.0.0.1`, `3143`, `3025`                                                 |
 | `WEB_HOST`, `WEB_PORT`                                                     | Optional. Address and port of the web interface. Open it to the network only behind HTTPS                                        | `127.0.0.1`, `4112` (default)                                               |
 | `WIDGET_ALLOWED_ORIGINS`                                                   | Optional. Origins of the applications that embed the widget, separated by commas. Without it, the server runs without the widget | `http://localhost:4114` (demo page)                                         |
@@ -221,7 +222,7 @@ A Slack user only gets rights when a contact with their Slack member ID exists i
 
 The agent watches its mailbox over IMAP and answers over SMTP. With the values of `.env.example`, it uses the local mail server started by `pnpm db:up`, with no account to create: start the server with `pnpm dev`, and the log shows `Email adapter listening`.
 
-Any mail client can write to the agent on the local mail server, at `127.0.0.1`, SMTP port `3025` and IMAP port `3143`. It accepts mail for any address, and creates a mailbox for each recipient, whose login and password are its address. Only this machine can reach it: the tests keep using it.
+Any mail client can write to the agent on the local mail server, at `127.0.0.1`, SMTP port `3025` and IMAP port `3143`, which `LOCAL_MAIL_SMTP_PORT` and `LOCAL_MAIL_IMAP_PORT` can change. It accepts mail for any address, and creates a mailbox for each recipient, whose login and password are its address. Only this machine can reach it: the tests keep using it.
 
 ### With Gmail
 
