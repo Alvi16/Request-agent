@@ -21,8 +21,11 @@ const env = z
     TEST_EMAIL_PASSWORD: z.string().min(1),
     // Not the EMAIL_ settings of the agent, which may point to a real mailbox such as Gmail.
     TEST_EMAIL_HOST: z.string().default("127.0.0.1"),
-    TEST_EMAIL_IMAP_PORT: z.coerce.number().default(3143),
-    TEST_EMAIL_SMTP_PORT: z.coerce.number().default(3025),
+    TEST_EMAIL_IMAP_PORT: z.coerce.number().optional(),
+    TEST_EMAIL_SMTP_PORT: z.coerce.number().optional(),
+    // Ports of the local mail server, as Docker Compose publishes them.
+    LOCAL_MAIL_IMAP_PORT: z.coerce.number().default(3143),
+    LOCAL_MAIL_SMTP_PORT: z.coerce.number().default(3025),
   })
   .parse(process.env);
 
@@ -31,9 +34,9 @@ const settings: MailServerSettings = {
   password: env.TEST_EMAIL_PASSWORD,
   address: `${env.TEST_EMAIL_USER}@requests.example`,
   imapHost: env.TEST_EMAIL_HOST,
-  imapPort: env.TEST_EMAIL_IMAP_PORT,
+  imapPort: env.TEST_EMAIL_IMAP_PORT ?? env.LOCAL_MAIL_IMAP_PORT,
   smtpHost: env.TEST_EMAIL_HOST,
-  smtpPort: env.TEST_EMAIL_SMTP_PORT,
+  smtpPort: env.TEST_EMAIL_SMTP_PORT ?? env.LOCAL_MAIL_SMTP_PORT,
   secure: false,
 };
 

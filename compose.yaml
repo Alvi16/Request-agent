@@ -31,14 +31,16 @@ services:
     # The image contains no tool to probe the ports, so it has no health check: clients retry.
     image: greenmail/standalone:2.1.15@sha256:309ba544ea482e5d4265d09921cdab07c8dad2cc4481d715c9b8ff5d3f0a149f
     environment:
-      # Two mailboxes: the agent's, and a separate one emptied by the tests.
+      # Two mailboxes: the agent's, and a separate one emptied by the tests. The agent's has its own
+      # LOCAL_MAIL_ settings, never the EMAIL_ ones, which may hold the password of a real mailbox.
       GREENMAIL_OPTS: >-
         -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0
-        -Dgreenmail.users=${EMAIL_USER:-agent}:${EMAIL_PASSWORD:?EMAIL_PASSWORD must be set in .env}@requests.example,${TEST_EMAIL_USER:-agent-test}:${TEST_EMAIL_PASSWORD:?TEST_EMAIL_PASSWORD must be set in .env}@requests.example
+        -Dgreenmail.users=${LOCAL_MAIL_USER:-agent}:${LOCAL_MAIL_PASSWORD:?LOCAL_MAIL_PASSWORD must be set in .env}@requests.example,${TEST_EMAIL_USER:-agent-test}:${TEST_EMAIL_PASSWORD:?TEST_EMAIL_PASSWORD must be set in .env}@requests.example
     ports:
-      # Bound to localhost only, like the database.
-      - "127.0.0.1:${EMAIL_SMTP_PORT:-3025}:3025"
-      - "127.0.0.1:${EMAIL_IMAP_PORT:-3143}:3143"
+      # Bound to localhost only, like the database. Not the EMAIL_ ports of the agent, which may point
+      # to a real mailbox such as Gmail while the tests keep using this server.
+      - "127.0.0.1:${LOCAL_MAIL_SMTP_PORT:-3025}:3025"
+      - "127.0.0.1:${LOCAL_MAIL_IMAP_PORT:-3143}:3143"
     deploy:
       resources:
         limits:
