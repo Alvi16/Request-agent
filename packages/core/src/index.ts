@@ -23,10 +23,25 @@ export {
   loadAppDatabaseEnv,
   loadClassifierEnv,
   loadDatabaseEnv,
+  loadKnowledgeEnv,
   type AppDatabaseEnv,
   type ClassifierEnv,
   type DatabaseEnv,
+  type KnowledgeEnv,
 } from "./env.ts";
+export {
+  articleInput,
+  knowledgeResultCount,
+  saveArticle,
+  searchKnowledge,
+  type ArticleInput,
+  type KnowledgeHit,
+} from "./knowledge/articles.ts";
+export {
+  createOllamaEmbedder,
+  type Embedder,
+  type OllamaEmbedderOptions,
+} from "./knowledge/embedder.ts";
 export {
   classifyTurn,
   conversationContext,

@@ -57,6 +57,7 @@ function handlerFor(steps: ScriptedStep[], classifications: Partial<Classificati
       classify,
       judgeDuplicate: () => Promise.resolve({ reference: null, confidence: 1 }),
       reviewThreshold: testReviewThreshold,
+      searchKnowledge: () => Promise.resolve([]),
     });
 }
 

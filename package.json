@@ -20,6 +20,7 @@
     "db:seed": "pnpm --filter @request-agent/core db:seed",
     "staff:add": "pnpm --filter @request-agent/core staff:add",
     "contact:add": "pnpm --filter @request-agent/core contact:add",
+    "kb:import": "pnpm --filter @request-agent/core kb:import",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "eval:classification": "pnpm --filter @request-agent/core eval:classification",

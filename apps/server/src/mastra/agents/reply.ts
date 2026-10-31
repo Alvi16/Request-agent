@@ -2,9 +2,8 @@ import type { RequestView } from "@request-agent/core";
 
 import type { ToolOutcome } from "../tools/request-tools";
 
-// The answer to the sender is written by code from what the tools really did. A small local model
-// mixes its reasoning with its answer and can promise actions nobody performed, so its text is
-// never sent.
+// The answer written by code from what the tools really did, sent when no answer of the model
+// passes the answer check (decision 009).
 
 // Sent when nothing reliable can be said about what happened to the message.
 export const fallbackReply =
@@ -46,7 +45,8 @@ function listed(requests: RequestView[]): string {
 // What to tell the sender about one action, or undefined when the action failed.
 function describeOutcome(outcome: ToolOutcome): string | undefined {
   let answer: string | undefined;
-  if (!outcome.result.ok) {
+  // Code cannot tell whether a help article answers the question, so it never quotes one.
+  if (outcome.tool === "search_knowledge_base" || !outcome.result.ok) {
     return answer;
   }
   switch (outcome.tool) {

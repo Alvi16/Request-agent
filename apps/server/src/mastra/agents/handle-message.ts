@@ -14,6 +14,7 @@ import {
   forwardToTeam,
   isMessageFiled,
   isNotARequest,
+  type KnowledgeHit,
   parseReference,
   prepareTurn,
   type RequestView,
@@ -39,10 +40,12 @@ export const maxAgentSteps = 8;
 // The length of a question passed to the team when the system forwards the message itself.
 const forwardedQuestionLength = 500;
 
-export interface ClassificationSettings {
+export interface HandlingSettings {
   classify: Classifier;
   judgeDuplicate: DuplicateJudge;
   reviewThreshold: number;
+  // Help articles closest to a question, among the projects of the sender.
+  searchKnowledge: (actor: ClassifiedTurn["actor"], question: string) => Promise<KnowledgeHit[]>;
 }
 
 export interface HandledMessage {
@@ -129,6 +132,14 @@ async function keepFollowUp(db: Database, turn: ClassifiedTurn): Promise<ToolOut
   return { tool: "add_message_to_request", result };
 }
 
+// A support question answered from a help article needs no request of its own either.
+function answeredFromKnowledge(turn: ClassifiedTurn, outcomes: ToolOutcome[]): boolean {
+  return (
+    turn.classification.type === "SUPPORT" &&
+    outcomes.some((o) => o.tool === "search_knowledge_base" && o.result.length > 0)
+  );
+}
+
 // A question asked to the sender is the answer itself: the agent stops there.
 function askedForDetails(outcomes: ToolOutcome[]): boolean {
   return outcomes.some((o) => o.tool === "request_clarification" && o.result.ok);
@@ -184,7 +195,7 @@ export async function handleMessage(
   agent: Agent,
   db: Database,
   input: TurnInput,
-  settings: ClassificationSettings,
+  settings: HandlingSettings,
 ): Promise<HandledMessage> {
   const classified = await classifyTurn(db, await prepareTurn(db, input), settings);
   const turn = await assessDuplicate(db, classified, settings.judgeDuplicate);
@@ -197,7 +208,11 @@ export async function handleMessage(
   const system = await describeTurn(db, turn);
   const result = await agent.generate(wrapUntrusted(turn.messageText), {
     system,
-    toolsets: { requests: createRequestTools(db, turn, outcomes) },
+    toolsets: {
+      requests: createRequestTools(db, turn, outcomes, (question) =>
+        settings.searchKnowledge(turn.actor, question),
+      ),
+    },
     maxSteps: maxAgentSteps,
     stopWhen: () => askedForDetails(outcomes),
     outputProcessors: [createAnswerCheck(() => answerContext(system, turn.messageText, outcomes))],
@@ -216,7 +231,9 @@ export async function handleMessage(
   }
   // A message still filed under no request is filed for a person, so none is lost, unless it only
   // asked a question that got its answer.
-  const answeredQuestion = answer !== "" && questionTypes.has(turn.classification.type);
+  const answeredQuestion =
+    answer !== "" &&
+    (questionTypes.has(turn.classification.type) || answeredFromKnowledge(turn, outcomes));
   const filedBySystem =
     answeredQuestion || (await isMessageFiled(db, turn.messageId))
       ? undefined

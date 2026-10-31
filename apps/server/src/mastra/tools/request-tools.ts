@@ -13,6 +13,7 @@ import {
   forwardToTeam,
   forwardToTeamInput,
   getRequestStatus,
+  type KnowledgeHit,
   listContactRequests,
   listContactRequestsInput,
   listProjectRequests,
@@ -30,6 +31,11 @@ import { z } from "zod";
 import { explainForModel } from "./explain";
 
 const noInput = z.object({});
+
+const knowledgeQuestionInput = z.object({ question: z.string().trim().min(1).max(500) });
+
+// Finds the help articles of the sender's projects closest to a question.
+export type KnowledgeSearch = (question: string) => Promise<KnowledgeHit[]>;
 
 type ResultOf<F extends (...args: never[]) => Promise<unknown>> = Awaited<ReturnType<F>>;
 
@@ -49,7 +55,8 @@ export type ToolOutcome =
   | { tool: "add_message_to_request"; result: ResultOf<typeof addMessageToRequest> }
   | { tool: "search_requests"; result: ResultOf<typeof searchRequests> }
   | { tool: "list_my_requests"; result: ResultOf<typeof listContactRequests> }
-  | { tool: "forward_to_team"; result: ResultOf<typeof forwardToTeam> };
+  | { tool: "forward_to_team"; result: ResultOf<typeof forwardToTeam> }
+  | { tool: "search_knowledge_base"; result: KnowledgeHit[] };
 
 // Builds the tools for one message. The turn is captured here, out of reach of the model and of
 // HTTP clients: the tools are never registered on the server, so its API cannot call them.
@@ -57,6 +64,7 @@ export function createRequestTools(
   db: Database,
   turn: ClassifiedTurn,
   outcomes: ToolOutcome[],
+  searchKnowledge: KnowledgeSearch,
 ): ToolsInput {
   const identifyContact = createTool({
     id: "identify_contact",
@@ -196,14 +204,31 @@ export function createRequestTools(
     id: "forward_to_team",
     description:
       "Passes to the team a question or a wish of the sender that the tools cannot answer or " +
-      "do: a date, who handles a request, how to use the product, closing or escalating a " +
-      "request. Give the reference of the request the question is about, if any. That request " +
-      "then waits for a person, who reads the question.",
+      "do: a date, who handles a request, how to use the product when no help article answers, " +
+      "closing or escalating a request. Give the reference of the request the question is " +
+      "about, if any. That request then waits for a person, who reads the question.",
     inputSchema: forwardToTeamInput,
     execute: async (input) => {
       const result = await forwardToTeam(db, turn, input);
       outcomes.push({ tool: "forward_to_team", result });
       return explainForModel(result);
+    },
+  });
+
+  const searchKnowledgeTool = createTool({
+    id: "search_knowledge_base",
+    description:
+      "Searches the help articles of the sender's projects for a question about how to use a " +
+      "product or how the support works. Returns the closest articles, best first. Read them: " +
+      "answer only from an article that answers the question, and say nothing it does not say.",
+    inputSchema: knowledgeQuestionInput,
+    execute: async ({ question }) => {
+      const result = await searchKnowledge(question);
+      outcomes.push({ tool: "search_knowledge_base", result });
+      // The relevance ranks the articles but does not tell whether one answers (decision 010).
+      return result.length === 0
+        ? { articles: [], note: "No help article exists for the projects of the sender." }
+        : { articles: result.map(({ project, title, body }) => ({ project, title, text: body })) };
     },
   });
 
@@ -228,5 +253,6 @@ export function createRequestTools(
     search_requests: searchRequestsTool,
     list_my_requests: listMyRequestsTool,
     forward_to_team: forwardToTeamTool,
+    search_knowledge_base: searchKnowledgeTool,
   };
 }

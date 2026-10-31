@@ -16,10 +16,11 @@ On a CPU, each answer of the agent takes 2 to 7 minutes. A computer that goes to
 pnpm db:up
 pnpm db:migrate
 pnpm db:seed
+pnpm kb:import --demo
 pnpm staff:add --email dana.support@team.example --name "Dana Support"
 ```
 
-The demo data holds three projects and three contacts, described in [the data model](data-model.md#demo-data). Bruno Leroy works on the PORTAL project only. Alice Martin works on SHOP and CRM, so the project of her messages is ambiguous. The last command creates the account of a fictitious team member for the web interface, and asks for a password of at least 15 characters.
+The demo data holds three projects and three contacts, described in [the data model](data-model.md#demo-data). Bruno Leroy works on the PORTAL project only. Alice Martin works on SHOP and CRM, so the project of her messages is ambiguous. `pnpm kb:import --demo` loads 10 fictitious help articles of the three projects, with Ollama running. The last command creates the account of a fictitious team member for the web interface, and asks for a password of at least 15 characters.
 
 ## 2. Start the services
 
@@ -60,6 +61,10 @@ In the web interface, open the request. Expected, as observed with `ornith:9b`:
 ### Asking questions
 
 Reply to the answer of the agent, in the same thread, with any question about the request, such as "Où en êtes-vous ?", "Qui s'en occupe ?" or "Quelles demandes ai-je en cours ?". The agent adds the reply to the request, looks up what the answer needs and answers. A question that the data cannot answer, such as "C'est prévu pour quand ?", or a wish, such as "Pouvez-vous la clôturer ?", is passed to the team: the answer says so, and the request appears under **À revoir** with the reason "Question transmise à l'équipe" and the question in its history.
+
+### Questions answered from the help articles
+
+Send a new email from `bruno.leroy@globex.example`, such as "Comment ajouter un utilisateur au portail ?" or "Vous êtes joignables le samedi ?". The agent finds the help article of the PORTAL project that answers it, loaded by `pnpm kb:import --demo`, and answers from it. No request is created. A question that no article answers, such as "Le portail a-t-il une application mobile ?", is filed as a request or passed to the team, as before.
 
 ### Variants
 

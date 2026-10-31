@@ -18,6 +18,7 @@ erDiagram
     messages ||--o{ attachments : carries
     requests ||--o{ events : "history of"
     requests |o--o{ requests : "duplicate of"
+    projects ||--o{ knowledge_articles : "documented by"
     contacts ||--o| staff_accounts : "signs in with"
     staff_accounts ||--o{ staff_sessions : opens
 ```
@@ -186,6 +187,20 @@ How far the agent has read an IMAP mailbox, so it finds the new emails even when
 | `last_uid`     | UID of the last email handed over to the agent                                            |
 
 It is not linked to the other tables.
+
+### `knowledge_articles`
+
+A help article of a project. The agent answers questions on how to use a product from the articles of the sender's projects ([decision 010](decisions/010-knowledge-base.md)).
+
+| Column            | Description                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `project_id`      | Project the article documents                                                                                                       |
+| `source`          | Where the article comes from, such as `PORTAL/factures.md`. Unique per project: importing the same source again updates the article |
+| `title`, `body`   | The article, at most 8000 characters                                                                                                |
+| `embedding_model` | Model that computed the vector. A search only compares vectors of its own model                                                     |
+| `embedding`       | Vector of 1024 numbers (pgvector), with an HNSW index for the cosine distance                                                       |
+
+Articles are added and updated with `pnpm kb:import`.
 
 ## Conventions
 

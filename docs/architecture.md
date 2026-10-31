@@ -9,7 +9,7 @@ flowchart LR
     subgraph External
         Slack["Slack<br/>Socket Mode"]
         Mail["Mail server<br/>IMAP and SMTP"]
-        Ollama["Ollama<br/>ornith:9b"]
+        Ollama["Ollama<br/>ornith:9b, qwen3-embedding:0.6b"]
     end
     subgraph server["apps/server: Mastra server"]
         SlackAdapter["Slack adapter"]
@@ -25,6 +25,7 @@ flowchart LR
         Turn["Sender and project<br/>fixed rules"]
         Classifier["Classifier and<br/>duplicate judge"]
         Requests["Request operations<br/>access rule"]
+        Knowledge["Knowledge base<br/>help articles"]
         Staff["Team accounts<br/>and sessions"]
     end
     DB[("PostgreSQL")]
@@ -40,6 +41,9 @@ flowchart LR
     Classifier --> Ollama
     Agent --> Ollama
     Agent --> Requests
+    Agent --> Knowledge
+    Knowledge --> Ollama
+    Knowledge --> DB
     Pages --> Requests
     Pages --> Staff
     Turn --> DB
@@ -47,11 +51,11 @@ flowchart LR
     Staff --> DB
 ```
 
-| Package         | Role                                                                                                                                                       | Depends on         |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `packages/core` | Data model, migrations, request operations and the access rule, classification and duplicate calls to Ollama, team accounts. Knows no channel and no agent | PostgreSQL, Ollama |
-| `apps/server`   | Mastra server: the agent and its tools, the Slack and Email adapters, the retries and the recovery of unhandled messages                                   | `packages/core`    |
-| `apps/web`      | Web interface of the team: pages rendered on the server, sign-in, review actions                                                                           | `packages/core`    |
+| Package         | Role                                                                                                                                                                       | Depends on         |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `packages/core` | Data model, migrations, request operations and the access rule, classification and duplicate calls to Ollama, knowledge base, team accounts. Knows no channel and no agent | PostgreSQL, Ollama |
+| `apps/server`   | Mastra server: the agent and its tools, the Slack and Email adapters, the retries and the recovery of unhandled messages                                                   | `packages/core`    |
+| `apps/web`      | Web interface of the team: pages rendered on the server, sign-in, review actions                                                                                           | `packages/core`    |
 
 Dependencies only point to the business core: the adapters, the agent and the web interface can change without touching it, and the core is tested alone against a real database.
 
