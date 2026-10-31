@@ -94,7 +94,8 @@ export function requestListPage(
             type="search"
             name="query"
             value="${filters.query ?? ""}"
-            placeholder="Mots ou REQ-0042"
+            placeholder="Titre, auteur, REQ-0042…"
+            autocomplete="off"
           />
         </label>
         <label>
@@ -139,25 +140,27 @@ export function requestListPage(
         <button class="primary" type="submit">Filtrer</button>
         <a href="/">Effacer</a>
       </form>
-      <p class="muted">${result.total} demande${result.total > 1 ? "s" : ""}</p>
-      ${requestRows(view, result.items)}
-      ${
-        pageCount > 1
-          ? html`<nav class="pages">
-              ${
-                filters.page > 1
-                  ? html`<a href="${pageLink(filters, filters.page - 1)}">Page précédente</a>`
-                  : ""
-              }
-              <span>Page ${filters.page} sur ${pageCount}</span>
-              ${
-                filters.page < pageCount
-                  ? html`<a href="${pageLink(filters, filters.page + 1)}">Page suivante</a>`
-                  : ""
-              }
-            </nav>`
-          : ""
-      }`,
+      <div id="results">
+        <p class="muted" role="status">${result.total} demande${result.total > 1 ? "s" : ""}</p>
+        ${requestRows(view, result.items)}
+        ${
+          pageCount > 1
+            ? html`<nav class="pages">
+                ${
+                  filters.page > 1
+                    ? html`<a href="${pageLink(filters, filters.page - 1)}">Page précédente</a>`
+                    : ""
+                }
+                <span>Page ${filters.page} sur ${pageCount}</span>
+                ${
+                  filters.page < pageCount
+                    ? html`<a href="${pageLink(filters, filters.page + 1)}">Page suivante</a>`
+                    : ""
+                }
+              </nav>`
+            : ""
+        }
+      </div>`,
     view.staff,
     "requests",
   );
