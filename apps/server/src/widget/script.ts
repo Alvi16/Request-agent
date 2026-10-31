@@ -111,10 +111,14 @@ export const widgetScript = String.raw`(() => {
     ".icon { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }",
     "button { font: inherit; cursor: pointer; }",
     "button:focus-visible, input:focus-visible, textarea:focus-visible, .kind input:focus-visible + span { outline: 3px solid rgba(108,92,231,.45); outline-offset: 2px; }",
+    ".launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; display: grid; place-items: center; width: 60px; height: 60px; border: none; border-radius: 50%; padding: 0; background: linear-gradient(135deg, #7c6cf0, #5b4bd5); color: #fff; box-shadow: 0 8px 24px rgba(91,75,213,.45); transition: transform .15s ease, box-shadow .15s ease; }",
+    ".launcher:hover { transform: scale(1.06); box-shadow: 0 12px 28px rgba(91,75,213,.55); }",
+    ".launcher .icon { width: 28px; height: 28px; }",
     ".launcher span { display: flex; }",
-    ".launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; display: flex; align-items: center; gap: 8px; border: none; border-radius: 999px; padding: 13px 20px; background: linear-gradient(135deg, #7c6cf0, #5b4bd5); color: #fff; font-size: 15px; font-weight: 600; box-shadow: 0 8px 24px rgba(91,75,213,.4); transition: transform .15s ease, box-shadow .15s ease; }",
-    ".launcher:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(91,75,213,.5); }",
-    ".panel { position: fixed; right: 20px; bottom: 84px; z-index: 2147483647; width: 380px; max-width: calc(100vw - 32px); height: 600px; max-height: calc(100vh - 110px); display: flex; flex-direction: column; background: #fff; color: #1f1d2b; border-radius: 20px; box-shadow: 0 20px 60px rgba(20,16,50,.28); overflow: hidden; font-size: 14px; line-height: 1.45; animation: rise .18s ease-out; }",
+    // The name of the bubble, shown beside it on hover or keyboard focus.
+    ".launcher .label { position: absolute; right: 72px; padding: 8px 12px; border-radius: 10px; background: #1f1d2b; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 6px 18px rgba(20,16,50,.25); opacity: 0; transform: translateX(6px); pointer-events: none; transition: opacity .15s ease, transform .15s ease; }",
+    ".launcher:hover .label, .launcher:focus-visible .label { opacity: 1; transform: none; }",
+    ".panel { position: fixed; right: 20px; bottom: 92px; z-index: 2147483647; width: 380px; max-width: calc(100vw - 32px); height: 600px; max-height: calc(100vh - 120px); display: flex; flex-direction: column; background: #fff; color: #1f1d2b; border-radius: 20px; box-shadow: 0 20px 60px rgba(20,16,50,.28); overflow: hidden; font-size: 14px; line-height: 1.45; animation: rise .18s ease-out; }",
     ".panel[hidden] { display: none; }",
     "@keyframes rise { from { opacity: 0; transform: translateY(12px); } }",
     ".top { padding: 18px 18px 0; background: linear-gradient(135deg, #7c6cf0, #5b4bd5); color: #fff; }",
@@ -213,14 +217,14 @@ export const widgetScript = String.raw`(() => {
     ".empty .icon { width: 36px; height: 36px; color: #b9b1f5; }",
     ".empty p { margin: 0; }",
     ".muted { margin: 0; color: #77748a; font-size: 13px; }",
-    "@media (max-width: 480px) { .panel { inset: 0; width: auto; max-width: none; height: auto; max-height: none; border-radius: 0; } .launcher { right: 16px; bottom: 16px; } }",
-    "@media (prefers-reduced-motion: reduce) { .panel, .typing span { animation: none; } .launcher, .kind > span, .files { transition: none; } .launcher:hover { transform: none; } }",
+    "@media (max-width: 480px) { .panel { inset: 0; width: auto; max-width: none; height: auto; max-height: none; border-radius: 0; } .launcher { right: 16px; bottom: 16px; } .launcher .label { display: none; } }",
+    "@media (prefers-reduced-motion: reduce) { .panel, .typing span { animation: none; } .launcher, .launcher .label, .kind > span, .files { transition: none; } .launcher:hover { transform: none; } }",
   ].join("\n");
 
   const host = element("div");
   const root = host.attachShadow({ mode: "open" });
   const launcherIcon = element("span", {}, icon("chat"));
-  const launcherText = element("span", { text: "Besoin d'aide ?" });
+  const launcherText = element("span", { class: "label", text: "Besoin d'aide ?" });
   const launcher = element(
     "button",
     { class: "launcher", type: "button", "aria-expanded": "false", "aria-controls": "panel" },
