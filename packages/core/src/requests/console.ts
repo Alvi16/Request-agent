@@ -84,7 +84,14 @@ export interface RequestRecord extends ConsoleRequest {
     subject: string | null;
     bodyText: string;
     sentAt: string;
-    attachments: { filename: string; contentType: string; sizeBytes: number }[];
+    // Stored is false when the channel only described the file, such as an email attachment.
+    attachments: {
+      id: string;
+      filename: string;
+      contentType: string;
+      sizeBytes: number;
+      stored: boolean;
+    }[];
   }[];
   history: {
     type: (typeof events.$inferSelect)["type"];
@@ -217,9 +224,11 @@ async function requestMessages(db: Database, requestId: string) {
       : await db
           .select({
             messageId: attachments.messageId,
+            id: attachments.id,
             filename: attachments.filename,
             contentType: attachments.contentType,
             sizeBytes: attachments.sizeBytes,
+            storageRef: attachments.storageRef,
           })
           .from(attachments)
           .where(
@@ -239,7 +248,13 @@ async function requestMessages(db: Database, requestId: string) {
     sentAt: row.sentAt.toISOString(),
     attachments: files
       .filter((file) => file.messageId === row.id)
-      .map(({ filename, contentType, sizeBytes }) => ({ filename, contentType, sizeBytes })),
+      .map(({ id, filename, contentType, sizeBytes, storageRef }) => ({
+        id,
+        filename,
+        contentType,
+        sizeBytes,
+        stored: storageRef !== null,
+      })),
   }));
 }
 
@@ -361,4 +376,24 @@ export function changeRequestStatus(
     }
     return succeed(input.status);
   });
+}
+
+// A stored file attached to a message, for the team to download. Undefined when the file was not
+// kept, such as an email attachment of which only the description is stored.
+export async function getStoredAttachment(
+  db: Database,
+  id: string,
+): Promise<{ filename: string; contentType: string; storageRef: string } | undefined> {
+  const [file] = await db
+    .select({
+      filename: attachments.filename,
+      contentType: attachments.contentType,
+      storageRef: attachments.storageRef,
+    })
+    .from(attachments)
+    .where(eq(attachments.id, id));
+  if (file === undefined || file.storageRef === null) {
+    return undefined;
+  }
+  return { filename: file.filename, contentType: file.contentType, storageRef: file.storageRef };
 }

@@ -271,6 +271,9 @@ importers:
       email-reply-parser:
         specifier: 'catalog:'
         version: 2.3.9
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.14
       imapflow:
         specifier: 'catalog:'
         version: 2.9.1

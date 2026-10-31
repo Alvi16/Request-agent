@@ -26,6 +26,7 @@
     "eval:classification": "pnpm --filter @request-agent/core eval:classification",
     "eval:duplicates": "pnpm --filter @request-agent/core eval:duplicates",
     "demo:email": "pnpm --filter @request-agent/server demo:email",
+    "demo:widget": "pnpm --filter @request-agent/server demo:widget",
     "lint": "oxlint",
     "format": "prettier . --write --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore",
     "format:check": "prettier . --check --ignore-path .gitignore --ignore-path .git/info/exclude --ignore-path .prettierignore"

@@ -56,8 +56,13 @@ const promises = [
   /\b(we|I) will\b/i,
   /\b(we|I)'ll\b/i,
   /\bthe team will\b/i,
-  // Anything the team or the agent "will" do, in the future tense: "ils examineront".
-  /(?<!\p{L})(l'équipe|ils|elles|nous|on|qui|celle-ci|celui-ci|ceux-ci)\s+(vous\s+|te\s+|t'|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
+  // Anything the team or the agent "will" do, in the future tense: "ils examineront", "l'équipe
+  // technique répondra".
+  /(?<!\p{L})(l'équipe(\s+\p{L}+)?|ils|elles|nous|on|qui|celle-ci|celui-ci|ceux-ci)\s+(vous\s+|te\s+|t'|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(ra|ront|rons)\b/iu,
+  // The same in the near future: "l'équipe technique va examiner", "ils vont corriger".
+  /(?<!\p{L})(l'équipe(\s+\p{L}+)?|ils|elles|on|celle-ci|celui-ci|ceux-ci)\s+(va|vont)\s+(vous\s+|lui\s+|leur\s+|la\s+|le\s+|les\s+)?\p{L}+(er|ir|re)\b/iu,
+  // What the sender will be told, whoever tells it: "et vous tiendra informé".
+  /\bvous (tiendr|informer|préviendr|recontacter|contacter|répondr)(a|ont)\b/iu,
   // A change announced as certain: "la priorité sera mise à jour".
   /\b(sera|seront)\s+(\p{L}+\s+)?(mise?s?|modifiée?s?|changée?s?|fermée?s?|clôturée?s?|corrigée?s?|résolue?s?|traitée?s?|examinée?s?)\b/iu,
 ];
@@ -91,7 +96,8 @@ function unknownReferences(text: string, known: Set<number>): string[] {
 
 // Why the answer cannot be sent, as feedback the model can act on. Empty when it can be sent.
 export function answerProblems(text: string, context: AnswerContext): string[] {
-  const answer = text.trim();
+  // Models write the typographic apostrophe as well: "l’équipe" is checked as "l'équipe".
+  const answer = text.trim().replaceAll("’", "'");
   if (answer === "") {
     return ["The answer is empty. Write the answer to the sender."];
   }

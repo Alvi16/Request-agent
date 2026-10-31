@@ -18,7 +18,7 @@ The P0 and P1 scope of the brief is in place: the Slack and Email channels, the 
 | Email integration                                             | P0       | Done        |
 | Email conversations, duplicates, human validation             | P1       | Done        |
 | Web interface to consult and review requests                  | P1       | Done        |
-| Embeddable web widget                                         | P2       | Not planned |
+| Embeddable web widget, with files and screen captures         | P2       | Done        |
 | Answers to questions about requests                           | P3       | Done        |
 | Per-project knowledge base and RAG                            | P3       | Done        |
 | Integration with code repositories                            | P3       | Not planned |
@@ -39,7 +39,7 @@ flowchart LR
     Core --> Postgres[("PostgreSQL<br/>Docker")]
 ```
 
-The business core holds the data model and the request operations, with no dependency on any channel. Slack and Email are input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md). The web interface is a separate process that uses the business core directly, without the agent: the team signs in to consult every request and to validate the decisions of the agent.
+The business core holds the data model and the request operations, with no dependency on any channel. Slack, Email and the web widget are input adapters in front of the same agent: each one stores the message received, tells whether the channel verified its sender, and hands it to the message handler. The data model is described in [`docs/data-model.md`](docs/data-model.md). The web interface is a separate process that uses the business core directly, without the agent: the team signs in to consult every request and to validate the decisions of the agent.
 
 Each message is first classified by a separate call to the model, which gives its type, priority, title and summary, with a confidence read from the model's token probabilities. A request waits for a human review when this confidence is low, when its project is unclear or when its sender is unverified. How a message is handled, the types and the measured quality are described in [`docs/agent.md`](docs/agent.md).
 
@@ -89,29 +89,32 @@ One file, at the root, configures the whole project. It is created from its temp
 cp .env.example .env
 ```
 
-| Variable                                                                   | Role                                                                                                                | Example value                                                               |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`                                                        | Password of the `request_agent` database user, used by Docker Compose                                               | `change-me`                                                                 |
-| `POSTGRES_PORT`                                                            | Port of the database on the machine (localhost only)                                                                | `5433`                                                                      |
-| `DATABASE_URL`                                                             | Connection to the development database, as its owner. Used by the migrations and the demo data                      | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
-| `APP_DATABASE_URL`                                                         | Connection used by the application, with the restricted `request_agent_app` role                                    | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
-| `TEST_DATABASE_URL`                                                        | Connection to the test database. Its name must end with `_test`                                                     | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
-| `OLLAMA_BASE_URL`                                                          | Ollama API endpoint. Must end with `/api`                                                                           | `http://127.0.0.1:11434/api`                                                |
-| `OLLAMA_MODEL`                                                             | Model used by the agent. It must be pulled first                                                                    | `ornith:9b`                                                                 |
-| `OLLAMA_EMBEDDING_MODEL`                                                   | Optional. Model of the knowledge base, with vectors of 1024 numbers. It must be pulled first                        | `qwen3-embedding:0.6b` (default)                                            |
-| `CLASSIFICATION_REVIEW_THRESHOLD`                                          | Optional. Below this confidence, from 0 to 1, a request waits for a human review                                    | `0.8` (default)                                                             |
-| `SLACK_BOT_TOKEN`                                                          | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack                   | `xoxb-…`                                                                    |
-| `SLACK_APP_TOKEN`                                                          | Optional. App-level token with the `connections:write` scope, for Socket Mode                                       | `xapp-…`                                                                    |
-| `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Servers of the agent's mailbox. Without `EMAIL_IMAP_HOST`, the server runs without email                            | `127.0.0.1`, `3143`, `127.0.0.1`, `3025` (local mail server)                |
-| `EMAIL_USER`, `EMAIL_PASSWORD`                                             | Login and password of the mailbox. On the local mail server, the password is chosen here                            | `agent`, `change-me-mail`                                                   |
-| `EMAIL_ADDRESS`                                                            | Address the agent receives and answers from                                                                         | `agent@requests.example`                                                    |
-| `EMAIL_SECURE`                                                             | `true` to connect with TLS, as real mail servers require. Defaults to `true`                                        | `false` (local mail server)                                                 |
-| `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender | `mx.google.com`                                                             |
-| `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine      | `true`                                                                      |
-| `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server, even when the agent uses Gmail. The tests empty it                  | `agent-test`, `change-me-mail-test`                                         |
-| `TEST_EMAIL_HOST`, `TEST_EMAIL_IMAP_PORT`, `TEST_EMAIL_SMTP_PORT`          | Optional. Server of the tests' mailbox, by default the local mail server                                            | `127.0.0.1`, `3143`, `3025`                                                 |
-| `WEB_HOST`, `WEB_PORT`                                                     | Optional. Address and port of the web interface. Open it to the network only behind HTTPS                           | `127.0.0.1`, `4112` (default)                                               |
-| `WEB_TIME_ZONE`                                                            | Optional. Time zone of the dates shown in the web interface, as an IANA name                                        | `Europe/Paris` (default)                                                    |
+| Variable                                                                   | Role                                                                                                                             | Example value                                                               |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`                                                        | Password of the `request_agent` database user, used by Docker Compose                                                            | `change-me`                                                                 |
+| `POSTGRES_PORT`                                                            | Port of the database on the machine (localhost only)                                                                             | `5433`                                                                      |
+| `DATABASE_URL`                                                             | Connection to the development database, as its owner. Used by the migrations and the demo data                                   | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent`         |
+| `APP_DATABASE_URL`                                                         | Connection used by the application, with the restricted `request_agent_app` role                                                 | `postgresql://request_agent_app:change-me-too@127.0.0.1:5433/request_agent` |
+| `TEST_DATABASE_URL`                                                        | Connection to the test database. Its name must end with `_test`                                                                  | `postgresql://request_agent:change-me@127.0.0.1:5433/request_agent_test`    |
+| `OLLAMA_BASE_URL`                                                          | Ollama API endpoint. Must end with `/api`                                                                                        | `http://127.0.0.1:11434/api`                                                |
+| `OLLAMA_MODEL`                                                             | Model used by the agent. It must be pulled first                                                                                 | `ornith:9b`                                                                 |
+| `OLLAMA_EMBEDDING_MODEL`                                                   | Optional. Model of the knowledge base, with vectors of 1024 numbers. It must be pulled first                                     | `qwen3-embedding:0.6b` (default)                                            |
+| `CLASSIFICATION_REVIEW_THRESHOLD`                                          | Optional. Below this confidence, from 0 to 1, a request waits for a human review                                                 | `0.8` (default)                                                             |
+| `SLACK_BOT_TOKEN`                                                          | Optional. Bot token of the Slack app. Without the two Slack tokens, the server runs without Slack                                | `xoxb-…`                                                                    |
+| `SLACK_APP_TOKEN`                                                          | Optional. App-level token with the `connections:write` scope, for Socket Mode                                                    | `xapp-…`                                                                    |
+| `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Servers of the agent's mailbox. Without `EMAIL_IMAP_HOST`, the server runs without email                                         | `127.0.0.1`, `3143`, `127.0.0.1`, `3025` (local mail server)                |
+| `EMAIL_USER`, `EMAIL_PASSWORD`                                             | Login and password of the mailbox. On the local mail server, the password is chosen here                                         | `agent`, `change-me-mail`                                                   |
+| `EMAIL_ADDRESS`                                                            | Address the agent receives and answers from                                                                                      | `agent@requests.example`                                                    |
+| `EMAIL_SECURE`                                                             | `true` to connect with TLS, as real mail servers require. Defaults to `true`                                                     | `false` (local mail server)                                                 |
+| `EMAIL_TRUSTED_AUTHSERV_ID`                                                | Optional. Name of the receiving server in its `Authentication-Results` header. Only that header can verify a sender              | `mx.google.com`                                                             |
+| `EMAIL_TRUST_LOCAL_SENDERS`                                                | Optional, local tests only: every sender counts as verified. Refused for a mailbox that is not on this machine                   | `true`                                                                      |
+| `TEST_EMAIL_USER`, `TEST_EMAIL_PASSWORD`                                   | Mailbox of the tests, on the local mail server, even when the agent uses Gmail. The tests empty it                               | `agent-test`, `change-me-mail-test`                                         |
+| `TEST_EMAIL_HOST`, `TEST_EMAIL_IMAP_PORT`, `TEST_EMAIL_SMTP_PORT`          | Optional. Server of the tests' mailbox, by default the local mail server                                                         | `127.0.0.1`, `3143`, `3025`                                                 |
+| `WEB_HOST`, `WEB_PORT`                                                     | Optional. Address and port of the web interface. Open it to the network only behind HTTPS                                        | `127.0.0.1`, `4112` (default)                                               |
+| `WIDGET_ALLOWED_ORIGINS`                                                   | Optional. Origins of the applications that embed the widget, separated by commas. Without it, the server runs without the widget | `http://localhost:4114` (demo page)                                         |
+| `WIDGET_IDENTITY_SECRET`                                                   | Optional. Secret shared with those applications to sign the identity of the person signed in, at least 32 characters             | Generated with `openssl rand -hex 32`                                       |
+| `ATTACHMENTS_DIR`                                                          | Absolute path of the folder of the files attached through the widget. Read by the web interface for downloads                    | `/home/you/request-agent-attachments`                                       |
+| `WEB_TIME_ZONE`                                                            | Optional. Time zone of the dates shown in the web interface, as an IANA name                                                     | `Europe/Paris` (default)                                                    |
 
 Set a password of your choice, and use the same password and port in `DATABASE_URL` and `TEST_DATABASE_URL`. Docker Compose refuses to start the database without a password. This password is applied only when the database is created, at the first start: changing it later has no effect on the existing database.
 
@@ -188,6 +191,16 @@ pnpm kb:import --demo
 ```
 
 To load your own articles, write one Markdown file per article, in a folder per project key, with the title as the first `# ` heading, such as `help/PORTAL/factures.md`. Then run `pnpm kb:import help`. Running it again updates the articles of the same files. How the articles are searched, and why, is described in [decision 010](docs/decisions/010-knowledge-base.md).
+
+## Web widget
+
+Client applications embed the widget with one script tag: their users write to the agent from the application, attach files or a capture of their screen, and follow the answer and the status of their request. The application signs the identity of the person signed in, so the agent knows who writes. How to embed it and sign the identity is described in [`docs/widget.md`](docs/widget.md), and the choices in [decision 011](docs/decisions/011-web-widget.md).
+
+To try it locally, set `WIDGET_ALLOWED_ORIGINS`, `WIDGET_IDENTITY_SECRET` and `ATTACHMENTS_DIR` as [`docs/widget.md`](docs/widget.md) shows, start the agent server, then open the demo page of a fictitious customer portal:
+
+```bash
+pnpm demo:widget
+```
 
 ## Connecting Slack
 
@@ -292,6 +305,7 @@ Request-agent/
 │   └── server/                     Mastra server
 │       ├── slack-app-manifest.yaml Settings of the Slack app
 │       ├── scripts/demo-email.ts   Sends a demonstration email and waits for the answer
+│       ├── scripts/demo-widget.ts  Demo page of a customer portal that embeds the widget
 │       └── src/
 │           ├── config.ts           Environment variables validation
 │           ├── channel-handler.ts  Database and agent shared by the channel adapters
@@ -303,6 +317,12 @@ Request-agent/
 │           │   ├── adapter.ts      Stores, queues and answers emails
 │           │   ├── connect.ts      IMAP and SMTP clients
 │           │   └── start.ts        Starts email with the server when it is configured
+│           ├── widget/
+│           │   ├── script.ts       The script embedded by the applications
+│           │   ├── adapter.ts      Stores, queues and answers widget messages, and serves conversations
+│           │   ├── identity.ts     Identity of the person, signed by the application
+│           │   ├── files.ts        Attached files: count, size and type read from the content
+│           │   └── start.ts        Routes on the Mastra server, started when the widget is configured
 │           ├── slack/
 │           │   ├── events.ts       Which Slack events reach the agent
 │           │   ├── adapter.ts      Stores, queues and answers Slack messages
@@ -383,9 +403,10 @@ All dependency versions are declared once in the `catalog` of `pnpm-workspace.ya
 
 ## Known limitations
 
-- Slack messages and emails are handled one at a time. A message left unhandled by a restart is handled again at the next start.
+- Slack messages, emails and widget messages are handled one at a time. A message left unhandled by a restart is handled again at the next start.
 - Duplicates are found among requests sharing words or spelling with the message: a rewording with no word in common, such as "CB" for "carte bancaire", is missed.
-- Attached files are described (name, type, size) but their content is not stored.
+- Email attachments are described (name, type, size) but their content is not stored. Files sent through the widget are stored and can be downloaded by the team.
+- The widget needs the Mastra server to be reachable from the browsers of the applications: it listens on this machine only for now.
 - A support question answered from a help article gets no request: if the model wrongly judges that an article answers it, the team does not see it. The articles themselves are written and kept up to date by the team.
 - Answers are written by a small local model. The check blocks codes, promises, unknown requests and false claims of forwarding, but a clumsy sentence can still pass. The system records no assignee and no planned date: questions about them are passed to the team.
 - The Mastra server API has no authentication. It only listens on `localhost` and gives no access to the request tools. Authentication will be required before the server is reachable from elsewhere. The web interface of the team has its own accounts.

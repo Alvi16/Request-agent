@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { loadEmailEnv, loadEnv, loadSlackTokens } from "./config";
+import { loadEmailEnv, loadEnv, loadSlackTokens, loadWidgetEnv } from "./config";
 
 const validEnv = {
   OLLAMA_BASE_URL: "http://127.0.0.1:11434/api",
@@ -83,5 +83,37 @@ describe("loadEmailEnv", () => {
 
   it("rejects an invalid address", () => {
     expect(() => loadEmailEnv({ ...local, EMAIL_ADDRESS: "agent" })).toThrow(/EMAIL_ADDRESS/);
+  });
+});
+
+describe("loadWidgetEnv", () => {
+  const widget = {
+    WIDGET_ALLOWED_ORIGINS: "https://portal.example.com, http://localhost:4114",
+    ATTACHMENTS_DIR: "/var/lib/request-agent/attachments",
+  };
+
+  it("is undefined when no origin is set, so the server runs without the widget", () => {
+    expect(loadWidgetEnv({})).toBeUndefined();
+    expect(loadWidgetEnv({ WIDGET_ALLOWED_ORIGINS: "" })).toBeUndefined();
+  });
+
+  it("reads the origins, and no secret when none is set", () => {
+    expect(loadWidgetEnv({ ...widget, WIDGET_IDENTITY_SECRET: "" })).toEqual({
+      WIDGET_ALLOWED_ORIGINS: ["https://portal.example.com", "http://localhost:4114"],
+      WIDGET_IDENTITY_SECRET: undefined,
+      ATTACHMENTS_DIR: "/var/lib/request-agent/attachments",
+    });
+  });
+
+  it("refuses an origin with a path, a short secret or a relative folder", () => {
+    expect(() =>
+      loadWidgetEnv({ ...widget, WIDGET_ALLOWED_ORIGINS: "https://portal.example.com/app" }),
+    ).toThrow(/WIDGET_ALLOWED_ORIGINS/);
+    expect(() => loadWidgetEnv({ ...widget, WIDGET_IDENTITY_SECRET: "short" })).toThrow(
+      /WIDGET_IDENTITY_SECRET/,
+    );
+    expect(() => loadWidgetEnv({ ...widget, ATTACHMENTS_DIR: "attachments" })).toThrow(
+      /ATTACHMENTS_DIR/,
+    );
   });
 });

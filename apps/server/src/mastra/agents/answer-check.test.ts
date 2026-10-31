@@ -75,6 +75,11 @@ describe("answerProblems", () => {
       "Ils lui diront qui s'en occupe.",
       "Elle est notée par l'équipe, qui vous répondra.",
       "Celle-ci procédera à la clôture.",
+      "L'équipe technique va examiner ce dysfonctionnement et vous tiendra informé.",
+      "L'équipe technique examinera ce dysfonctionnement.",
+      "Ils vont corriger le bouton.",
+      "Un développeur vous recontactera.",
+      "L’équipe technique va examiner ce dysfonctionnement.",
     ]) {
       expect(answerProblems(answer, context)).toHaveLength(1);
     }

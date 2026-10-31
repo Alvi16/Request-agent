@@ -12,6 +12,7 @@ import {
   changeRequestStatus,
   consolePageSize,
   getRequestRecord,
+  getStoredAttachment,
   listProjects,
   listRequests,
   listRequestsInput,
@@ -182,7 +183,13 @@ describe("getRequestRecord", () => {
       "Toujours en erreur ce matin.",
     ]);
     expect(record?.messages[0]?.attachments).toEqual([
-      { filename: "capture.png", contentType: "image/png", sizeBytes: 2048 },
+      {
+        id: expect.any(String),
+        filename: "capture.png",
+        contentType: "image/png",
+        sizeBytes: 2048,
+        stored: false,
+      },
     ]);
     expect(record?.history.map((event) => event.type)).toEqual([
       "CREATED",
@@ -254,6 +261,38 @@ describe("getRequestRecord", () => {
   it("finds nothing for an unknown or malformed reference", async () => {
     await expect(getRequestRecord(getAppDatabase(), "REQ-9999")).resolves.toBe(undefined);
     await expect(getRequestRecord(getAppDatabase(), "9999")).resolves.toBe(undefined);
+  });
+});
+
+describe("getStoredAttachment", () => {
+  it("gives a stored file, and nothing for a file of which only the description was kept", async () => {
+    await portalRequest("Erreur 500 sur le portail");
+    const [message] = await getDatabase().select({ id: messages.id }).from(messages);
+    const [stored, described] = await getDatabase()
+      .insert(attachments)
+      .values([
+        {
+          messageId: message?.id ?? "",
+          filename: "capture.png",
+          contentType: "image/png",
+          sizeBytes: 2048,
+          storageRef: "0b4c1f9e-5c43-4c1d-9d8e-2f3a4b5c6d7e",
+        },
+        {
+          messageId: message?.id ?? "",
+          filename: "devis.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 4096,
+        },
+      ])
+      .returning({ id: attachments.id });
+
+    expect(await getStoredAttachment(getAppDatabase(), stored?.id ?? "")).toEqual({
+      filename: "capture.png",
+      contentType: "image/png",
+      storageRef: "0b4c1f9e-5c43-4c1d-9d8e-2f3a4b5c6d7e",
+    });
+    expect(await getStoredAttachment(getAppDatabase(), described?.id ?? "")).toBeUndefined();
   });
 });
 
