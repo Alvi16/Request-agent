@@ -294,11 +294,15 @@ describe("pages", () => {
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
-  it("serves the stylesheet, the script and the health check without a session", async () => {
+  it("serves the stylesheet, the script, the icon and the health check without a session", async () => {
     expect((await app.request("/app.css")).headers.get("content-type")).toContain("text/css");
     const script = await app.request("/app.js");
     expect(script.headers.get("content-type")).toContain("text/javascript");
     expect(await script.text()).toContain("requestSubmit");
+    const icon = await app.request("/favicon.svg");
+    expect(icon.headers.get("content-type")).toBe("image/svg+xml");
+    expect(await icon.text()).toMatch(/^<svg /);
+    expect(await (await app.request("/login")).text()).toContain('href="/favicon.svg"');
     expect(await (await app.request("/health")).text()).toBe("ok");
   });
 });
