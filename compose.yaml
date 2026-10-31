@@ -36,9 +36,10 @@ services:
         -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0
         -Dgreenmail.users=${EMAIL_USER:-agent}:${EMAIL_PASSWORD:?EMAIL_PASSWORD must be set in .env}@requests.example,${TEST_EMAIL_USER:-agent-test}:${TEST_EMAIL_PASSWORD:?TEST_EMAIL_PASSWORD must be set in .env}@requests.example
     ports:
-      # Bound to localhost only, like the database.
-      - "127.0.0.1:${EMAIL_SMTP_PORT:-3025}:3025"
-      - "127.0.0.1:${EMAIL_IMAP_PORT:-3143}:3143"
+      # Bound to localhost only, like the database. Not the EMAIL_ ports of the agent, which may point
+      # to a real mailbox such as Gmail while the tests keep using this server.
+      - "127.0.0.1:${LOCAL_MAIL_SMTP_PORT:-3025}:3025"
+      - "127.0.0.1:${LOCAL_MAIL_IMAP_PORT:-3143}:3143"
     deploy:
       resources:
         limits:
