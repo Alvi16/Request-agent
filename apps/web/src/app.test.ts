@@ -196,6 +196,18 @@ describe("pages", () => {
     expect(filtered).not.toContain(`>${reference}<`);
   });
 
+  it("finds a request from the start of a word, inside the part that the script replaces", async () => {
+    const cookie = await signIn();
+    const reference = await portalRequest("Le portail plante.");
+
+    const found = await (await app.request("/?query=porta", { headers: { cookie } })).text();
+    const none = await (await app.request("/?query=facture", { headers: { cookie } })).text();
+
+    expect(found).toMatch(new RegExp(`<div id="results">[\\s\\S]*>${reference}<`));
+    expect(found).toContain('<p class="muted" role="status">1 demande</p>');
+    expect(none).toContain('<p class="muted" role="status">0 demande</p>');
+  });
+
   it("shows the type, status, priority and source as colored badges", async () => {
     const cookie = await signIn();
     await portalRequest("Le portail plante.");
@@ -294,6 +306,8 @@ describe("pages", () => {
 
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(response.headers.get("content-security-policy")).toContain("script-src 'self';");
+    // The script only fetches pages of the site itself.
+    expect(response.headers.get("content-security-policy")).toContain("connect-src 'self';");
     expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
     expect(await response.text()).toContain('<script src="/app.js" defer></script>');
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -304,7 +318,7 @@ describe("pages", () => {
     expect((await app.request("/app.css")).headers.get("content-type")).toContain("text/css");
     const script = await app.request("/app.js");
     expect(script.headers.get("content-type")).toContain("text/javascript");
-    expect(await script.text()).toContain("requestSubmit");
+    expect(await script.text()).toContain('getElementById("results")');
     const icon = await app.request("/favicon.svg");
     expect(icon.headers.get("content-type")).toBe("image/svg+xml");
     expect(await icon.text()).toMatch(/^<svg /);

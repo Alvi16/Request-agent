@@ -95,12 +95,13 @@ export function createWebApp(options: WebAppOptions) {
     c.html(fragment, status);
 
   // Only the script and stylesheet of this site: nothing inline and no resource from elsewhere
-  // (OWASP Secure Headers Project).
+  // (OWASP Secure Headers Project). The script may only fetch pages of this site.
   app.use(
     secureHeaders({
       contentSecurityPolicy: {
         defaultSrc: ["'none'"],
         scriptSrc: ["'self'"],
+        connectSrc: ["'self'"],
         styleSrc: ["'self'"],
         imgSrc: ["'self'"],
         formAction: ["'self'"],

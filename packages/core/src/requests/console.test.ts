@@ -66,6 +66,8 @@ async function portalRequest(title: string, text = title) {
 const list = (input: Parameters<typeof listRequestsInput.parse>[0] = {}) =>
   listRequests(getAppDatabase(), listRequestsInput.parse(input));
 
+const found = async (query: string) => (await list({ query })).items.map((item) => item.reference);
+
 describe("listRequestsInput", () => {
   it("reads a query string where empty fields mean no filter", () => {
     expect(
@@ -125,6 +127,39 @@ describe("listRequests", () => {
       (await list({ query: crash.toLowerCase() })).items.map((item) => item.reference),
     ).toEqual([crash]);
     expect((await list({ query: "paiement" })).total).toBe(0);
+  });
+
+  it("finds parts of words, whatever their accents and case, as a search box does", async () => {
+    const payment = await portalRequest("Paiement par carte en échec");
+    const button = await portalRequest("Bouton de validation non fonctionnel");
+
+    expect(await found("paie")).toEqual([payment]);
+    expect(await found("ECHEC")).toEqual([payment]);
+    expect(await found("vali bout")).toEqual([button]);
+    expect(await found("carte bouton")).toEqual([]);
+    expect(await found(button.slice(-4))).toEqual([button]);
+    expect(await found("leroy")).toEqual(expect.arrayContaining([payment, button]));
+  });
+
+  it("takes the wildcards of a search literally", async () => {
+    await portalRequest("Erreur 500 sur le portail");
+
+    expect((await list({ query: "%" })).total).toBe(0);
+    expect((await list({ query: "_" })).total).toBe(0);
+    expect((await list({ query: "\\" })).total).toBe(0);
+  });
+
+  it("puts the titles closest to a partial search first", async () => {
+    const mention = await portalRequest(
+      "Erreur 500",
+      "Le paiement a échoué juste après la commande",
+    );
+    const title = await portalRequest("Paiement refusé");
+
+    expect((await list({ query: "paiem" })).items.map((item) => item.reference)).toEqual([
+      title,
+      mention,
+    ]);
   });
 
   it("returns one page at a time with the total", async () => {
