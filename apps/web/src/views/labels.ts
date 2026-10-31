@@ -39,7 +39,11 @@ export const priorityLabels: Labels<typeof requestPriority> = {
   CRITICAL: "Critique",
 };
 
-export const channelLabels: Labels<typeof channel> = { SLACK: "Slack", EMAIL: "E-mail" };
+export const channelLabels: Labels<typeof channel> = {
+  SLACK: "Slack",
+  EMAIL: "E-mail",
+  WIDGET: "Widget",
+};
 
 export const eventLabels: Labels<typeof eventType> = {
   CREATED: "Créée",

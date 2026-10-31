@@ -243,15 +243,20 @@ function messageList(view: ViewContext, record: RequestRecord): Fragment {
         ${
           message.attachments.length === 0
             ? ""
-            : html`<div class="muted">
-                Pièces jointes :
-                ${message.attachments
-                  .map(
+            : html`<div class="muted">Pièces jointes :</div>
+                <ul class="muted attachments">
+                  ${message.attachments.map(
                     (file) =>
-                      `${file.filename} (${file.contentType}, ${Math.ceil(file.sizeBytes / 1024)} Ko)`,
-                  )
-                  .join(", ")}
-              </div>`
+                      html`<li>
+                        ${
+                          file.stored
+                            ? html`<a href="/attachments/${file.id}">${file.filename}</a>`
+                            : file.filename
+                        }
+                        (${file.contentType}, ${Math.ceil(file.sizeBytes / 1024)} Ko)
+                      </li>`,
+                  )}
+                </ul>`
         }
       </article>`,
   )}`;

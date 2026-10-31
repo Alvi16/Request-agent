@@ -74,17 +74,17 @@ Who works on which project, with an optional `role`. When the sender of a messag
 
 ### `project_channels`
 
-A Slack channel or an email address dedicated to one project (`channel`, `external_id`). A message received there belongs to that project, without asking the language model.
+A Slack channel, an email address or a widget dedicated to one project (`channel`, `external_id`; for a widget, the project key it is embedded with). A message received there belongs to that project, without asking the language model.
 
 ### `conversations`
 
 A logical group of messages.
 
-| Column        | Description                                                                     |
-| ------------- | ------------------------------------------------------------------------------- |
-| `channel`     | `SLACK` or `EMAIL`                                                              |
-| `external_id` | Slack thread (channel ID and thread timestamp) or Message-ID of the first email |
-| `subject`     | Subject of the email thread                                                     |
+| Column        | Description                                                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `channel`     | `SLACK`, `EMAIL` or `WIDGET`                                                                                                 |
+| `external_id` | Slack thread (channel ID and thread timestamp), Message-ID of the first email, or hash of the token of a widget conversation |
+| `subject`     | Subject of the email thread                                                                                                  |
 
 ### `messages`
 
@@ -93,8 +93,8 @@ A message received or sent, on any channel.
 | Column              | Description                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `conversation_id`   | Conversation of the message. It must be on the same channel                                                         |
-| `channel`           | `SLACK` or `EMAIL`                                                                                                  |
-| `external_id`       | Slack message (channel ID and timestamp) or email Message-ID                                                        |
+| `channel`           | `SLACK`, `EMAIL` or `WIDGET`                                                                                        |
+| `external_id`       | Slack message (channel ID and timestamp), email Message-ID, or a random ID for a widget message                     |
 | `direction`         | `INBOUND` (received) or `OUTBOUND` (sent by the agent)                                                              |
 | `request_id`        | Request the message belongs to, once identified                                                                     |
 | `author_contact_id` | Contact who wrote the message, set only when the channel verified a known sender                                    |
@@ -112,7 +112,7 @@ A message is stored only once for a given channel and external ID, so an email p
 
 ### `attachments`
 
-Files attached to a message: `filename`, `content_type`, `size_bytes`, and `storage_ref`, the location of the stored file, empty when only the metadata is kept.
+Files attached to a message: `filename`, `content_type`, `size_bytes`, and `storage_ref`, the name of the stored file in `ATTACHMENTS_DIR`, empty when only the metadata is kept. The widget stores the files it receives, under random names; email attachments are only described.
 
 ### `requests`
 

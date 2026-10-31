@@ -1,3 +1,5 @@
+import { isAbsolute } from "node:path";
+
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -47,7 +49,29 @@ const emailEnvSchema = z
     path: ["EMAIL_TRUST_LOCAL_SENDERS"],
   });
 
+// An origin alone, such as https://portal.example.com: no path, no trailing slash.
+const origin = z
+  .url()
+  .refine((value) => new URL(value).origin === value, { message: "Must be an origin only" });
+
+// The widget is optional, like Slack and email: without the origins of the applications that
+// embed it, the server runs without it.
+const widgetEnvSchema = z.object({
+  WIDGET_ALLOWED_ORIGINS: z
+    .string()
+    .transform((value) => value.split(",").map((item) => item.trim()))
+    .pipe(z.array(origin).min(1)),
+  // Shared with the applications, which sign the identity of the person signed in. Optional:
+  // without it, every person who writes through the widget is unverified.
+  WIDGET_IDENTITY_SECRET: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(32, "Must be at least 32 characters").optional(),
+  ),
+  ATTACHMENTS_DIR: z.string().refine(isAbsolute, { message: "Must be an absolute path" }),
+});
+
 export type Env = z.infer<typeof envSchema>;
+export type WidgetEnv = z.infer<typeof widgetEnvSchema>;
 export type EmailEnv = z.infer<typeof emailEnvSchema>;
 export interface SlackTokens {
   botToken: string;
@@ -81,4 +105,12 @@ export function loadEmailEnv(source: NodeJS.ProcessEnv = process.env): EmailEnv 
     return undefined;
   }
   return parse(emailEnvSchema, source);
+}
+
+// The widget settings, or undefined when the widget is not configured.
+export function loadWidgetEnv(source: NodeJS.ProcessEnv = process.env): WidgetEnv | undefined {
+  if (source.WIDGET_ALLOWED_ORIGINS === undefined || source.WIDGET_ALLOWED_ORIGINS === "") {
+    return undefined;
+  }
+  return parse(widgetEnvSchema, source);
 }

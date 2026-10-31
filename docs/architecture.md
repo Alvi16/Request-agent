@@ -9,11 +9,13 @@ flowchart LR
     subgraph External
         Slack["Slack<br/>Socket Mode"]
         Mail["Mail server<br/>IMAP and SMTP"]
+        Apps["Client applications<br/>widget script"]
         Ollama["Ollama<br/>ornith:9b, qwen3-embedding:0.6b"]
     end
     subgraph server["apps/server: Mastra server"]
         SlackAdapter["Slack adapter"]
         EmailAdapter["Email adapter"]
+        WidgetAdapter["Widget adapter<br/>/widget routes"]
         Reliable["Reliable handling<br/>retries, recovery"]
         Handler["Message handler"]
         Agent["Request agent<br/>tools built per message"]
@@ -32,8 +34,10 @@ flowchart LR
 
     Slack <--> SlackAdapter
     Mail <--> EmailAdapter
+    Apps <--> WidgetAdapter
     SlackAdapter --> Reliable
     EmailAdapter --> Reliable
+    WidgetAdapter --> Reliable
     Reliable --> Handler
     Handler --> Turn
     Handler --> Classifier
@@ -54,7 +58,7 @@ flowchart LR
 | Package         | Role                                                                                                                                                                       | Depends on         |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `packages/core` | Data model, migrations, request operations and the access rule, classification and duplicate calls to Ollama, knowledge base, team accounts. Knows no channel and no agent | PostgreSQL, Ollama |
-| `apps/server`   | Mastra server: the agent and its tools, the Slack and Email adapters, the retries and the recovery of unhandled messages                                                   | `packages/core`    |
+| `apps/server`   | Mastra server: the agent and its tools, the Slack, Email and widget adapters, the retries and the recovery of unhandled messages                                           | `packages/core`    |
 | `apps/web`      | Web interface of the team: pages rendered on the server, sign-in, review actions                                                                                           | `packages/core`    |
 
 Dependencies only point to the business core: the adapters, the agent and the web interface can change without touching it, and the core is tested alone against a real database.
@@ -110,7 +114,7 @@ The application connects with a restricted database role, which can read, add an
 
 ## Adding a channel
 
-A new channel, such as Microsoft Teams or a web widget, is a new adapter in `apps/server`. The agent, the tools and the business core do not change. The adapter must:
+A new channel, such as Microsoft Teams, is a new adapter in `apps/server`. The agent, the tools and the business core do not change. The adapter must:
 
 1. Add the channel to the `channel` enumeration in `packages/core/src/db/schema.ts`, and generate the migration with `pnpm db:generate`.
 2. Store each message received with `storeInboundMessage`, giving its conversation (thread) and its unique external ID, so a message delivered twice is stored once.
@@ -120,4 +124,4 @@ A new channel, such as Microsoft Teams or a web widget, is a new adapter in `app
 6. At startup, handle again the messages returned by `listUnhandledMessages` for the channel.
 7. Start in `apps/server/src/mastra/index.ts` only when its configuration is present, like Slack and Email.
 
-The Slack adapter (`apps/server/src/slack/`) and the Email adapter (`apps/server/src/email/`) follow these steps, and their tests show how to test an adapter with a fake channel.
+The Slack adapter (`apps/server/src/slack/`), the Email adapter (`apps/server/src/email/`) and the web widget (`apps/server/src/widget/`, [decision 011](decisions/011-web-widget.md)) follow these steps, and their tests show how to test an adapter with a fake channel. The widget was added this way, without changing the agent: its answer is stored in the conversation, which the browser reads.

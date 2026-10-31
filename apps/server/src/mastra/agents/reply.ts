@@ -9,7 +9,8 @@ import type { ToolOutcome } from "../tools/request-tools";
 export const fallbackReply =
   "Votre message a bien été reçu. Une personne de l'équipe va le traiter et reviendra vers vous.";
 
-const statusLabels: Record<RequestView["status"], string> = {
+// The status of a request, in the words a sender reads.
+export const statusLabels: Record<RequestView["status"], string> = {
   NEW: "enregistrée, en attente de traitement",
   IN_PROGRESS: "en cours de traitement",
   WAITING_FOR_INFO: "en attente d'informations de votre part",

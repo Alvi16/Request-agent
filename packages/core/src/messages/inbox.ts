@@ -19,8 +19,13 @@ export interface ChannelMessage {
   raw: unknown;
   sentAt: Date;
   inReplyTo?: string | null;
-  // Files attached to the message. Only their description is stored for now.
-  attachments?: { filename: string; contentType: string; sizeBytes: number }[];
+  // Files attached to the message, with where the channel stored the file itself, if it did.
+  attachments?: {
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    storageRef?: string;
+  }[];
 }
 
 export interface StoredMessage {
@@ -76,6 +81,7 @@ async function storeMessage(
             filename: file.filename,
             contentType: file.contentType,
             sizeBytes: file.sizeBytes,
+            storageRef: file.storageRef ?? null,
           })),
         );
       }

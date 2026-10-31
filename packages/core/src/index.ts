@@ -98,6 +98,11 @@ export {
   type StoredMessage,
 } from "./messages/inbox.ts";
 export {
+  conversationOrigin,
+  readConversation,
+  type ConversationThread,
+} from "./messages/conversation.ts";
+export {
   listUnhandledMessages,
   markHandled,
   maxHandlingAttempts,
@@ -126,6 +131,7 @@ export {
   changeStatusInput,
   consolePageSize,
   getRequestRecord,
+  getStoredAttachment,
   listProjects,
   listRequests,
   listRequestsInput,

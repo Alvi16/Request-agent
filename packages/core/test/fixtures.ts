@@ -9,7 +9,7 @@ export const bruno = "bruno.leroy@globex.example";
 export const chloeSlackId = "U000000CHLOE";
 
 interface StoredMessage {
-  channel?: "SLACK" | "EMAIL";
+  channel?: "SLACK" | "EMAIL" | "WIDGET";
   sender: string;
   bodyText: string;
   subject?: string;

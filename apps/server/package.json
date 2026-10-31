@@ -9,6 +9,7 @@
     "build": "mastra build",
     "start": "mastra start --env ../../.env",
     "demo:email": "node --env-file-if-exists=../../.env scripts/demo-email.ts",
+    "demo:widget": "node --env-file-if-exists=../../.env scripts/demo-widget.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
@@ -18,6 +19,7 @@
     "@slack/socket-mode": "catalog:",
     "@slack/web-api": "catalog:",
     "email-reply-parser": "catalog:",
+    "hono": "catalog:",
     "imapflow": "catalog:",
     "nodemailer": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
