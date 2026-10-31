@@ -2,7 +2,14 @@ import { mkdtemp, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { attachments, messages, storeInboundMessage, type TurnInput } from "@request-agent/core";
+import {
+  attachments,
+  events,
+  messages,
+  requests,
+  storeInboundMessage,
+  type TurnInput,
+} from "@request-agent/core";
 import {
   bruno,
   seedDatabase,
@@ -149,6 +156,52 @@ describe("the widget channel", () => {
       waiting: false,
     });
     expect((await widget.app.request("/widget/conversations/unknown")).status).toBe(404);
+  });
+
+  it("gives the status of a request created by the conversation as a label and a code", async () => {
+    // The agent files the message as a request in progress, as it would through its tools.
+    const widget = await widgetFor(async (input) => {
+      const [request] = await getDatabase()
+        .insert(requests)
+        .values({
+          type: "BUG",
+          status: "IN_PROGRESS",
+          title: "Bouton Valider inactif",
+          sourceChannel: "WIDGET",
+        })
+        .returning({ id: requests.id });
+      await getDatabase()
+        .insert(events)
+        .values({
+          requestId: request?.id ?? "",
+          type: "CREATED",
+          actorType: "AGENT",
+          messageId: input.messageId,
+        });
+      return { reply: answer, filedBySystem: false };
+    });
+    const token = await conversationOf(
+      await widget.app.request(
+        "/widget/messages",
+        newMessage({ kind: "BUG", text: "Le bouton Valider ne répond plus.", ...signed() }),
+      ),
+    );
+    await widget.idle();
+
+    const thread: unknown = await (
+      await widget.app.request(`/widget/conversations/${token}`)
+    ).json();
+
+    expect(thread).toMatchObject({
+      requests: [
+        {
+          reference: expect.stringMatching(/^REQ-\d{4}$/),
+          title: "Bouton Valider inactif",
+          status: "en cours de traitement",
+          statusCode: "IN_PROGRESS",
+        },
+      ],
+    });
   });
 
   it("treats a person as unverified without a valid signature of the application", async () => {

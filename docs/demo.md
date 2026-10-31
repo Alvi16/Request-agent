@@ -134,13 +134,13 @@ The agent adds 👀 to the message, then answers in its thread with the referenc
 ## 5. Widget → Agent → Request
 
 1. Add to `.env` the variables of the widget, described in [`widget.md`](widget.md): `WIDGET_ALLOWED_ORIGINS=http://localhost:4114`, a `WIDGET_IDENTITY_SECRET` made with `openssl rand -hex 32`, and an absolute `ATTACHMENTS_DIR`. Restart `pnpm dev` and `pnpm web`: the log of the agent server shows `Widget listening`.
-2. Start the demo page of a fictitious customer portal, signed in as Bruno Leroy:
+2. Start the demo page, the orders page of a fictitious customer portal, signed in as Bruno Leroy:
 
    ```bash
    pnpm demo:widget
    ```
 
-3. Open `http://localhost:4114`, click **Besoin d'aide ?**, choose **Signaler un bug**, write "Depuis ce matin, le bouton Valider de la page Commandes ne fait plus rien quand je clique dessus.", attach a file or capture the screen, and send.
+3. Open `http://localhost:4114`, click the bubble at the bottom right, choose **Bug**, write "Depuis ce matin, le bouton Valider de la page Commandes ne fait plus rien quand je clique dessus.", attach a file or capture the screen, and send.
 4. The widget shows the message and waits for the agent. After a few minutes, it shows the answer of the agent and the request, with its reference and status.
 5. In the web interface, the request shows the source Widget, the project PORTAL from the widget of the portal, the author Bruno Leroy, and the file, which can be downloaded.
 

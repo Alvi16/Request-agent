@@ -276,6 +276,8 @@ export async function createWidgetApp(options: WidgetOptions) {
         reference: request.reference,
         title: request.title,
         status: statusLabels[request.status],
+        // The code of the status, from which the widget shows a short label and a color.
+        statusCode: request.status,
       })),
     });
   });
