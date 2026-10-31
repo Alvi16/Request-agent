@@ -141,20 +141,47 @@ function toConsoleRequest(row: ConsoleRow): ConsoleRequest {
   };
 }
 
-// Requests matching the filters, a page at a time. A search finds words of the title, summary and
-// description in French, or a reference such as REQ-0042, best matches first.
+// Most words a search looks for: enough for a search box, and it bounds the size of the query.
+const maxSearchWords = 10;
+
+// The text a search looks into: what the list shows of a request and the words behind it, in lower
+// case and without accents.
+const searchedText = sql`unaccent(lower(concat_ws(' ',
+  'REQ-' || lpad(${requests.number}::text, greatest(4, length(${requests.number}::text)), '0'),
+  ${requests.title}, ${requests.summary}, ${requests.description}, ${contacts.name}, ${contacts.email})))`;
+
+// As in the search box of a website: each word typed must appear somewhere, even as the start or
+// a part of a word, whatever its accents and case. LIKE wildcards typed are taken literally.
+function containsEveryWord(text: string): SQL | undefined {
+  const words = text
+    .split(/\s+/)
+    .filter((word) => word !== "")
+    .slice(0, maxSearchWords);
+  return and(
+    ...words.map((word) => {
+      const literal = word.replaceAll(/[\\%_]/g, "\\$&");
+      return sql`${searchedText} like '%' || unaccent(lower(${literal})) || '%'`;
+    }),
+  );
+}
+
+// Requests matching the filters, a page at a time. A search finds parts of words of the reference,
+// title, summary, description and requester, or French words in other forms, such as "factures"
+// for "facture". Requests whose words match best come first, then the titles closest to the search.
 export async function listRequests(
   db: Database,
   input: z.output<typeof listRequestsInput>,
 ): Promise<{ items: ConsoleRequest[]; total: number }> {
-  const query =
-    input.query === undefined ? undefined : sql`websearch_to_tsquery('french', ${input.query})`;
-  const referenceNumber = input.query === undefined ? undefined : parseReference(input.query);
+  const search = input.query;
+  const fullText =
+    search === undefined ? undefined : sql`websearch_to_tsquery('french', ${search})`;
+  const referenceNumber = search === undefined ? undefined : parseReference(search);
   const where = and(
-    query === undefined
+    search === undefined
       ? undefined
       : or(
-          sql`${requests.search} @@ ${query}`,
+          sql`${requests.search} @@ ${fullText}`,
+          containsEveryWord(search),
           referenceNumber === undefined ? undefined : eq(requests.number, referenceNumber),
         ),
     input.projectKey === undefined ? undefined : eq(projects.key, input.projectKey.toUpperCase()),
@@ -164,9 +191,16 @@ export async function listRequests(
     input.needsReview === undefined ? undefined : eq(requests.needsReview, true),
   );
   const order =
-    query === undefined
+    search === undefined
       ? [desc(requests.updatedAt), desc(requests.number)]
-      : [desc(sql`ts_rank(${requests.search}, ${query})`), desc(requests.number)];
+      : [
+          desc(sql`ts_rank(${requests.search}, ${fullText})`),
+          desc(
+            sql`word_similarity(unaccent(lower(${search})), unaccent(lower(${requests.title})))`,
+          ),
+          desc(requests.updatedAt),
+          desc(requests.number),
+        ];
   const [rows, [total]] = await Promise.all([
     selectConsoleRequests(db, where)
       .orderBy(...order)
@@ -176,6 +210,7 @@ export async function listRequests(
       .select({ value: count() })
       .from(requests)
       .leftJoin(projects, eq(projects.id, requests.projectId))
+      .leftJoin(contacts, eq(contacts.id, requests.requesterContactId))
       .where(where),
   ]);
   return { items: rows.map(toConsoleRequest), total: total?.value ?? 0 };
