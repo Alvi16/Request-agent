@@ -4,7 +4,7 @@ Multi-channel AI agent that centralizes requests about the company's projects. I
 
 ## Status
 
-The P0 and P1 scope of the brief is in place: the Slack and Email channels, the agent and its classification, the structured storage with its history, duplicate detection, human validation and the web interface of the team. The two scenarios, Email → Agent → Request and Slack → Agent → Request, are described step by step in [`docs/demo.md`](docs/demo.md).
+The P0 and P1 scope of the brief is in place: the Slack and Email channels, the agent and its classification, the structured storage with its history, duplicate detection, human validation and the web interface of the team. Of the bonuses, the web widget (P2) and the per-project knowledge base, with answers to support questions (P3), are in place too. The three scenarios, Email → Agent → Request, Slack → Agent → Request and Widget → Agent → Request, are described step by step in [`docs/demo.md`](docs/demo.md).
 
 | Feature                                                       | Priority | Status      |
 | ------------------------------------------------------------- | -------- | ----------- |
